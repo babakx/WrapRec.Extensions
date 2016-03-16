@@ -50,9 +50,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="WrapRec">
-      <HintPath>..\lib\WrapRec.exe</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\BPRFM.cs" />
@@ -64,7 +61,12 @@
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\WrapRec\WrapRec\WrapRec.csproj">
+      <Project>{2f243960-e695-4990-9c9e-e395979165de}</Project>
+      <Name>WrapRec</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>copy /Y "D:\Dropbox\Projects\WrapRec Projects\WrapRec\WrapRec\bin\x64\Debug\WrapRec.exe" "D:/Dropbox/Projects/WrapRec Projects/Extensions/WrapRec.Extensions/lib/WrapRec.exe"</PreBuildEvent>

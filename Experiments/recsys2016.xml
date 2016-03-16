@@ -4,7 +4,7 @@
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.BPRMF" NumFactors="10,20,30" NumIter="50,100" WithReplacement="true" UniformUserSampling="false" />
 		</model>
 		<model id="bprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
-			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.BPRFM" NumFactors="10,20,30" NumIter="50,100" WithReplacement="true" UniformUserSampling="false" />
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.BPRFM" NumFactors="30" NumIter="100" WithReplacement="true" UniformUserSampling="false" />
 		</model>		
 		<model id="mp" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.MostPopular"/>
@@ -86,9 +86,9 @@
 		<experiment id="kollekt4" models="mp,bprmf,libfm,uknn" splits="kollekt-fav-s,kollekt-lis-s,kollekt-fol-s" evalContext="ranking" />
 		<experiment id="kollekt5" models="mp,bprmf,uknn" splits="kollekt-all-fm" evalContext="ranking" />
 		<experiment id="kollekt6" models="libfm" splits="kollekt-all-fm" evalContext="ranking" />
-		<experiment id="kollekt7" models="bprfm" splits="kollekt-fol-s" evalContext="ranking" />
+		<experiment id="kollekt8" models="bprfm" splits="kollekt-fol-s" evalContext="ranking" />
 
-		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint3.csv,kollekt7.csv" outputFile="kollekt.joint4.csv" />
+		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint4.csv,kollekt8.csv" outputFile="kollekt.joint5.csv" />
 		<experiment id="split" type="other" class="WrapRec.Utils.FileSplitter" sourceReader="kollekt-fol" part1Reader="kollekt-fol-train" part2Reader="kollekt-fol-test" part1Ratio="0.75" />
 	</experiments>
 </wraprec>

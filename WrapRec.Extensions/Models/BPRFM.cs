@@ -52,12 +52,13 @@ namespace WrapRec.Extensions.Models
 					feature_factors, feat.Item1, item_factors, item_id, item_factors, other_item_id);
 			}
 
-			double sigmoid = 1 / (1 + Math.Exp(y_uij));
+			double exp = Math.Exp(y_uij);
+			double sigmoid = exp / (1 + exp);
 
 			// adjust bias terms
 			if (update_i)
 			{
-				// TODO: check why -Bias, also it should be sigmoid derivitive
+				// TODO: check why -Bias
 				double update = sigmoid - BiasReg * item_bias[item_id];
 				item_bias[item_id] += (float)(learn_rate * update);
 			}
