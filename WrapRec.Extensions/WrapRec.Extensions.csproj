@@ -36,6 +36,12 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MyMediaLite">
+      <HintPath>..\..\..\WrapRec\lib\MyMediaLite.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog">
+      <HintPath>..\packages\NLog.4.2.3\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -49,18 +55,23 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\BPRFM.cs" />
+    <Compile Include="Models\MmlBprfmRecommender.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="IO\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>copy /Y "D:\Dropbox\Projects\WrapRec Projects\WrapRec\WrapRec\bin\Debug\WrapRec.exe" "D:/Dropbox/Projects/WrapRec Projects/Extensions/WrapRec.Extensions/lib/WrapRec.exe"</PreBuildEvent>
+    <PreBuildEvent>copy /Y "D:\Dropbox\Projects\WrapRec Projects\WrapRec\WrapRec\bin\x64\Debug\WrapRec.exe" "D:/Dropbox/Projects/WrapRec Projects/Extensions/WrapRec.Extensions/lib/WrapRec.exe"</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>copy /Y "$(TargetDir)$(ProjectName).dll" "D:\Dropbox\Projects\WrapRec Projects\WrapRec\WrapRec\bin\x64\Debug\$(ProjectName).dll"
+copy /Y "$(TargetDir)$(ProjectName).dll" "D:\Dropbox\Projects\WrapRec Projects\WrapRec\WrapRec\bin\x64\Release\$(ProjectName).dll"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -3,6 +3,9 @@
 		<model id="bprmf" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.BPRMF" NumFactors="10,20,30" NumIter="50,100" WithReplacement="true" UniformUserSampling="false" />
 		</model>
+		<model id="bprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.BPRFM" NumFactors="10,20,30" NumIter="50,100" WithReplacement="true" UniformUserSampling="false" />
+		</model>		
 		<model id="mp" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.MostPopular"/>
 		</model>
@@ -11,33 +14,59 @@
 		</model>
 		<model id="libfm" class="WrapRec.Models.LibFmWrapper">
 			<parameters libFmPath="D:\Dropbox\Projects\WrapRec Projects\WrapRec\lib\libfm.net.exe"
-				task="r" dim="1-1-8" method="sgd,mcmc" iter="30" learn_rate="0.02" />
+				task="r" dim="1-1-10,1-1-20,1-1-30" method="sgd" iter="50,100" learn_rate="0.02" />
 		</model>
 	</models>
 	<data>
 		<dataReaders>
 			<!-- user,followedPlaylist -->
-			<reader id="kollekt-uf" path="D:\Dropbox\Datasets\Kollectfm\user_playlist.csv" sliceType="other" dataType="posFeedback"
+			<reader id="kollekt-fol" path="D:\Dropbox\Datasets\Kollectfm\user_playlist.csv" sliceType="other" dataType="posFeedback"
+				class="WrapRec.IO.CsvReader" hasHeader="true" delimiter="," />
+
+			<reader id="kollekt-fol-train" path="D:\Dropbox\Datasets\Kollectfm\user_playlist_train75.csv" sliceType="train" dataType="posFeedback"
+				class="WrapRec.IO.CsvReader" hasHeader="true" delimiter="," />
+
+			<reader id="kollekt-fol-test" path="D:\Dropbox\Datasets\Kollectfm\user_playlist_test25.csv" sliceType="test" dataType="posFeedback"
 				class="WrapRec.IO.CsvReader" hasHeader="true" delimiter="," />
 
 			<!-- user,playlist,favoriteRatio with favorite-ratio-threshold of 0.1 -->
-			<reader id="kollekt-up-01" path="D:\Dropbox\University\RecSys 2016\dataset\userPlFavRatio\01.txt" sliceType="other" dataType="posFeedback"
+			<reader id="kollekt-fav-01" path="D:\Dropbox\University\RecSys 2016\dataset\userPlFavRatio\01.txt" sliceType="train" dataType="posFeedback"
+				class="WrapRec.IO.CsvReader" hasHeader="true" delimiter="," header="userId,playlistId,favRatio:r" />
+
+			<!-- user,playlist,favoriteRatio with favorite-ratio-threshold of 0.005 -->
+			<reader id="kollekt-fav-005" path="D:\Dropbox\University\RecSys 2016\dataset\userPlFavRatio\005.txt" sliceType="other" dataType="posFeedback"
 				class="WrapRec.IO.CsvReader" hasHeader="true" delimiter="," />
 
-			<!-- user,playlist,favoriteRatio with favorite-ratio-threshold of 0.1 -->
-			<reader id="kollekt-up-005" path="D:\Dropbox\University\RecSys 2016\dataset\userPlFavRatio\005.txt" sliceType="other" dataType="posFeedback"
-				class="WrapRec.IO.CsvReader" hasHeader="true" delimiter="," />
+			<!-- user,playlist,listenRatio with listen-ratio-threshold of 0.1 -->
+			<reader id="kollekt-lis-01" path="D:\Dropbox\University\RecSys 2016\dataset\userPlSecondsRatio\userPlSecondsRatio01.txt" sliceType="train" dataType="posFeedback"
+				class="WrapRec.IO.CsvReader" hasHeader="true" delimiter="," header="userId,playlistId,listenRatio:r" />
+
 		</dataReaders>
 		
 		<dataContainers>
-			<dataContainer id="kollekt-fav" dataReaders="kollekt-up-01" />
-			<dataContainer id="kollekt-fol" dataReaders="kollekt-uf" />
+			<dataContainer id="kollekt-fav" dataReaders="kollekt-fav-01" />
+			<dataContainer id="kollekt-fol" dataReaders="kollekt-fol" />
+			<dataContainer id="kollekt-lis" dataReaders="kollekt-lis-01" />
+			
+			<dataContainer id="kollekt-fav-s" dataReaders="kollekt-fav-01,kollekt-fol-test" />
+			<dataContainer id="kollekt-lis-s" dataReaders="kollekt-lis-01,kollekt-fol-test" />
+			<dataContainer id="kollekt-fol-s" dataReaders="kollekt-fol-train,kollekt-fol-test" />
+
+			<dataContainer id="kollekt-all" dataReaders="kollekt-fol-train,kollekt-fol-test,kollekt-fav-01,kollekt-lis-01" />
 		</dataContainers>
 		
 	</data>
 	<splits>
 		<split id="kollekt-fav" type="dynamic" dataContainer="kollekt-fav" trainRatios="0.75" />
 		<split id="kollekt-fol" type="dynamic" dataContainer="kollekt-fol" trainRatios="0.75" />
+		<split id="kollekt-lis" type="dynamic" dataContainer="kollekt-lis" trainRatios="0.75" />
+
+		<split id="kollekt-fav-s" type="static" dataContainer="kollekt-fav-s" />
+		<split id="kollekt-lis-s" type="static" dataContainer="kollekt-lis-s" />
+		<split id="kollekt-fol-s" type="static" dataContainer="kollekt-fol-s" />
+
+		<split id="kollekt-all" type="static" dataContainer="kollekt-all" />
+		<split id="kollekt-all-fm" type="static" dataContainer="kollekt-all" feedbackAttributes="favRatio,listenRatio" />
 	</splits>
 	<evalContexts>
 		<evalContext id="rating-default">
@@ -49,8 +78,17 @@
 			<evaluator class="WrapRec.Evaluation.RankingEvaluatorsOpr" candidateItemsMode="training" numCandidates="100,1000" cutOffs="5,10,20"  />
 		</evalContext>
 	</evalContexts>
-	<experiments run="kollekt2" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
-		<experiment id="kollekt1" models="mp,bprmf,uknn" splits="kollekt-fav" evalContext="ranking" />
-		<experiment id="kollekt2" models="mp,bprmf,uknn" splits="kollekt-fol" evalContext="ranking" />
+	<experiments run="join" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
+		<experiment id="kollekt1" models="libfm" splits="kollekt-fav" evalContext="ranking" />
+		<experiment id="kollekt2" models="libfm" splits="kollekt-fol" evalContext="ranking" />
+		<experiment id="kollekt3" models="mp,bprmf,uknn,libfm" splits="kollekt-lis" evalContext="ranking" />
+		<experiment id="kollekt-all" models="mp,bprmf,uknn,libfm" splits="kollekt-all" evalContext="ranking" />
+		<experiment id="kollekt4" models="mp,bprmf,libfm,uknn" splits="kollekt-fav-s,kollekt-lis-s,kollekt-fol-s" evalContext="ranking" />
+		<experiment id="kollekt5" models="mp,bprmf,uknn" splits="kollekt-all-fm" evalContext="ranking" />
+		<experiment id="kollekt6" models="libfm" splits="kollekt-all-fm" evalContext="ranking" />
+		<experiment id="kollekt7" models="bprfm" splits="kollekt-fol-s" evalContext="ranking" />
+
+		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint3.csv,kollekt7.csv" outputFile="kollekt.joint4.csv" />
+		<experiment id="split" type="other" class="WrapRec.Utils.FileSplitter" sourceReader="kollekt-fol" part1Reader="kollekt-fol-train" part2Reader="kollekt-fol-test" part1Ratio="0.75" />
 	</experiments>
 </wraprec>
