@@ -37,7 +37,7 @@ namespace WrapRec.Extensions.Models
 				mmlFeedback.Add(UsersMap.ToInternalID(feedback.User.Id), ItemsMap.ToInternalID(feedback.Item.Id));
 				
 				// the attributes are translated so that they can be used later for training
-				foreach (var attr in feedback.Attributes)
+				foreach (var attr in feedback.GetAllAttributes())
 					attr.Translation = featBuilder.TranslateAttribute(attr);
 			}
 
