@@ -70,8 +70,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IO\MultiLevelFeedbackCsvReader.cs" />
     <Compile Include="Models\BPRFM.cs" />
     <Compile Include="Models\MmlBprfmRecommender.cs" />
+    <Compile Include="Models\MultiLevelBPRFM.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -85,12 +87,14 @@
       <Name>WrapRec</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>copy /Y "D:\Dropbox\Projects\WrapRec Projects\WrapRec\WrapRec\bin\x64\Debug\WrapRec.exe" "D:/Dropbox/Projects/WrapRec Projects/Extensions/WrapRec.Extensions/lib/WrapRec.exe"</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PostBuildEvent>copy /Y "$(TargetDir)$(ProjectName).dll" "D:\Dropbox\Projects\WrapRec Projects\WrapRec\WrapRec\bin\x64\Debug\$(ProjectName).dll"
+copy /Y "$(TargetDir)$(ProjectName).pdb" "D:\Dropbox\Projects\WrapRec Projects\WrapRec\WrapRec\bin\x64\Debug\$(ProjectName).pdb"
 copy /Y "$(TargetDir)$(ProjectName).dll" "D:\Dropbox\Projects\WrapRec Projects\WrapRec\WrapRec\bin\x64\Release\$(ProjectName).dll"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

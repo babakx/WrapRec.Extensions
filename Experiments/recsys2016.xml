@@ -4,8 +4,11 @@
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.BPRMF" NumFactors="10" NumIter="50" WithReplacement="true" UniformUserSampling="false" />
 		</model>
 		<model id="bprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
-			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.BPRFM" NumFactors="10,20" NumIter="50,100" WithReplacement="true" UniformUserSampling="false" />
-		</model>		
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.BPRFM" NumFactors="10" NumIter="50" WithReplacement="true" UniformUserSampling="false" />
+		</model>
+		<model id="mlbprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="10" NumIter="50" WithReplacement="true" UniformUserSampling="false" />
+		</model>
 		<model id="mp" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.MostPopular"/>
 		</model>
@@ -48,6 +51,19 @@
 			<!-- user likes on facebook. The third column in the number of likes per category which is ingnored with this reader -->
 			<reader id="kollekt-user-fb-likes" path="D:\Dropbox\University\RecSys 2016\dataset\userFbCatLikesCountJoined.txt" sliceType="other" dataType="userAttributes"
 				class="WrapRec.IO.CsvReader" hasHeader="false" delimiter="," header="userId:d,catId:d,numLikes:n" />
+
+			<!-- reading with multi-level behavior -->
+			<reader id="kollekt-fol-train-ml" path="D:\Dropbox\Datasets\Kollectfm\user_playlist_train75.csv" sliceType="train" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," level="0" />
+
+			<reader id="kollekt-fol-test-ml" path="D:\Dropbox\Datasets\Kollectfm\user_playlist_test25.csv" sliceType="test" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," level="0" />
+
+			<reader id="kollekt-fav-01-ml" path="D:\Dropbox\University\RecSys 2016\dataset\userPlFavRatio\01.txt" sliceType="train" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," header="userId,playlistId,favRatio:n" level="1" />
+
+			<reader id="kollekt-lis-01-ml" path="D:\Dropbox\University\RecSys 2016\dataset\userPlSecondsRatio\userPlSecondsRatio01.txt" sliceType="train" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," header="userId,playlistId,listenRatio:n" level="2" />
 		</dataReaders>
 		
 		<dataContainers>
@@ -59,11 +75,13 @@
 			<dataContainer id="kollekt-lis-s" dataReaders="kollekt-lis-01,kollekt-fol-test" />
 			<dataContainer id="kollekt-fol-s" dataReaders="kollekt-fol-train,kollekt-fol-test" />
 
-			<dataContainer id="kollekt-all" dataReaders="kollekt-fol-train,kollekt-fol-test,kollekt-fav-01,kollekt-lis-01" />
+			<dataContainer id="kollekt-all" dataReaders="kollekt-fol-train,kollekt-fol-test,kollekt-fav-01,kollekt-lis-01" allowDuplicates="false" />
 
 			<dataContainer id="kollekt-fol-s-attr" dataReaders="kollekt-fol-train,kollekt-fol-test,kollekt-user-fb-likes" />
 			<dataContainer id="kollekt-fav-s-attr" dataReaders="kollekt-fav-01,kollekt-fol-test,kollekt-user-fb-likes" />
 			<dataContainer id="kollekt-lis-s-attr" dataReaders="kollekt-lis-01,kollekt-fol-test,kollekt-user-fb-likes" />
+
+			<dataContainer id="kollekt-all-ml" dataReaders="kollekt-fol-train-ml,kollekt-fol-test-ml,kollekt-fav-01-ml,kollekt-lis-01-ml" allowDuplicates="true" />
 		</dataContainers>
 	</data>
 
@@ -82,6 +100,8 @@
 		<split id="kollekt-fol-s-attr" type="static" dataContainer="kollekt-fol-s-attr" />
 		<split id="kollekt-fav-s-attr" type="static" dataContainer="kollekt-fav-s-attr" />
 		<split id="kollekt-lis-s-attr" type="static" dataContainer="kollekt-lis-s-attr" />
+
+		<split id="kollekt-all-ml" type="static" dataContainer="kollekt-all-ml"/>
 	</splits>
 	
 	<evalContexts>
@@ -100,19 +120,21 @@
 		</evalContext>
 	</evalContexts>
 	
-	<experiments run="kollekt11" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
+	<experiments run="join" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
 		<experiment id="kollekt1" models="libfm" splits="kollekt-fav" evalContext="ranking" />
 		<experiment id="kollekt2" models="libfm" splits="kollekt-fol" evalContext="ranking" />
 		<experiment id="kollekt3" models="mp,bprmf,uknn,libfm" splits="kollekt-lis" evalContext="ranking" />
-		<experiment id="kollekt-all" models="mp,bprmf,uknn,libfm" splits="kollekt-all" evalContext="ranking" />
+		<experiment id="kollekt-all-1" models="mp,bprmf,uknn,libfm" splits="kollekt-all" evalContext="ranking" />
+		<experiment id="kollekt-all" models="bprfm" splits="kollekt-all" evalContext="ranking" />
 		<experiment id="kollekt4" models="mp,bprmf,libfm,uknn" splits="kollekt-fav-s,kollekt-lis-s,kollekt-fol-s" evalContext="ranking" />
 		<experiment id="kollekt5" models="mp,bprmf,uknn" splits="kollekt-all-fm" evalContext="ranking" />
 		<experiment id="kollekt6" models="libfm" splits="kollekt-all-fm" evalContext="ranking" />
 		<experiment id="kollekt8" models="bprfm" splits="kollekt-fol-s" evalContext="ranking" />
 		<experiment id="kollekt9" models="bprmf" splits="kollekt-fol-s" evalContext="ranking" />
 		<experiment id="kollekt11" models="bprfm" splits="kollekt-fol-s-attr,kollekt-fav-s-attr,kollekt-lis-s-attr" evalContext="ranking-attr" />
+		<experiment id="kollekt12" models="mlbprfm" splits="kollekt-all-ml" evalContext="ranking" />
 
-		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint6.csv,kollekt10.csv" outputFile="kollekt.joint7.csv" />
+		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint10.csv,kollekt-all.csv" outputFile="kollekt.joint11.csv" />
 		<experiment id="split" type="other" class="WrapRec.Utils.FileSplitter" sourceReader="kollekt-fol" part1Reader="kollekt-fol-train" part2Reader="kollekt-fol-test" part1Ratio="0.75" />
 	</experiments>
 </wraprec>
