@@ -1,13 +1,16 @@
 <wraprec>
 	<models>
+		<model id="bmf" class="WrapRec.Models.MmlRecommender">
+			<parameters ml-class="MyMediaLite.dll:MyMediaLite.RatingPrediction.BiasedMatrixFactorization" NumFactors="10" NumIter="10" />
+		</model>
 		<model id="bprmf" class="WrapRec.Models.MmlRecommender">
-			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.BPRMF" NumFactors="10" NumIter="50" WithReplacement="true" UniformUserSampling="false" />
+			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.BPRMF" NumFactors="10" NumIter="10" WithReplacement="true" UniformUserSampling="false" />
 		</model>
 		<model id="bprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
-			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.BPRFM" NumFactors="10" NumIter="50" WithReplacement="true" UniformUserSampling="false" />
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.BPRFM" NumFactors="10" NumIter="10" WithReplacement="true" UniformUserSampling="false" />
 		</model>
 		<model id="mlbprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
-			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="10" NumIter="50" WithReplacement="true" UniformUserSampling="false" />
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="5,10,20,50" NumIter="10,100,200" WithReplacement="false" UniformUserSampling="true" IsRatingBased="true" OverSamplePopular="true" />
 		</model>
 		<model id="mp" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.MostPopular"/>
@@ -23,6 +26,9 @@
 	
 	<data>
 		<dataReaders>
+			<reader id="ml100k-ml" path="D:\Dropbox\Datasets\MovieLens\ml-100k\u.data" sliceType="other" dataType="ratings"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.RatingAsMultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,rating,timestamp:n" delimiter="\t" maxRating="5" />
+			
 			<!-- user,followedPlaylist -->
 			<reader id="kollekt-fol" path="D:\Dropbox\Datasets\Kollectfm\user_playlist.csv" sliceType="other" dataType="posFeedback"
 				class="WrapRec.IO.CsvReader" hasHeader="true" delimiter="," />
@@ -63,10 +69,12 @@
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," header="userId,playlistId,favRatio:n" level="1" />
 
 			<reader id="kollekt-lis-01-ml" path="D:\Dropbox\University\RecSys 2016\dataset\userPlSecondsRatio\userPlSecondsRatio01.txt" sliceType="train" dataType="posFeedback"
-				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," header="userId,playlistId,listenRatio:n" level="2" />
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," header="userId,playlistId,listenRatio:n" level="1" />
 		</dataReaders>
 		
 		<dataContainers>
+			<dataContainer id="ml100k-ml" dataReaders="ml100k-ml" />
+
 			<dataContainer id="kollekt-fav" dataReaders="kollekt-fav-01" />
 			<dataContainer id="kollekt-fol" dataReaders="kollekt-fol" />
 			<dataContainer id="kollekt-lis" dataReaders="kollekt-lis-01" />
@@ -86,6 +94,8 @@
 	</data>
 
 	<splits>
+		<split id="ml100k-ml" type="dynamic" dataContainer="ml100k-ml" trainRatios="0.75" />
+
 		<split id="kollekt-fav" type="dynamic" dataContainer="kollekt-fav" trainRatios="0.75" />
 		<split id="kollekt-fol" type="dynamic" dataContainer="kollekt-fol" trainRatios="0.75" />
 		<split id="kollekt-lis" type="dynamic" dataContainer="kollekt-lis" trainRatios="0.75" />
@@ -109,6 +119,9 @@
 			<evaluator class="WrapRec.Evaluation.RMSE" />
 			<evaluator class="WrapRec.Evaluation.MAE" />
 		</evalContext>
+		<evalContext id="rating-ranking">
+			<evaluator class="WrapRec.Evaluation.RatingBasedRankingEvaluatorsOpr" candidateItemsMode="training" numCandidates="100,1000" cutOffs="5,10,20" relevanceThreshold="4"  />
+		</evalContext>
 		<evalContext id="ranking">
 			<evaluator class="WrapRec.Evaluation.RankingEvaluators" candidateItemsMode="training" numCandidates="100,1000" cutOffs="5,10,20"  />
 			<evaluator class="WrapRec.Evaluation.RankingEvaluatorsOpr" candidateItemsMode="training" numCandidates="100,1000" cutOffs="5,10,20"  />
@@ -120,7 +133,7 @@
 		</evalContext>
 	</evalContexts>
 	
-	<experiments run="join" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
+	<experiments run="ml100k3" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
 		<experiment id="kollekt1" models="libfm" splits="kollekt-fav" evalContext="ranking" />
 		<experiment id="kollekt2" models="libfm" splits="kollekt-fol" evalContext="ranking" />
 		<experiment id="kollekt3" models="mp,bprmf,uknn,libfm" splits="kollekt-lis" evalContext="ranking" />
@@ -132,9 +145,13 @@
 		<experiment id="kollekt8" models="bprfm" splits="kollekt-fol-s" evalContext="ranking" />
 		<experiment id="kollekt9" models="bprmf" splits="kollekt-fol-s" evalContext="ranking" />
 		<experiment id="kollekt11" models="bprfm" splits="kollekt-fol-s-attr,kollekt-fav-s-attr,kollekt-lis-s-attr" evalContext="ranking-attr" />
-		<experiment id="kollekt12" models="mlbprfm" splits="kollekt-all-ml" evalContext="ranking" />
+		<experiment id="kollekt15" models="mlbprfm" splits="kollekt-all-ml" evalContext="ranking" />
 
-		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint10.csv,kollekt-all.csv" outputFile="kollekt.joint11.csv" />
+		<experiment id="ml100k1" models="bmf,mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
+		<experiment id="ml100k3" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
+
+		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint12.csv,kollekt15.csv" outputFile="kollekt.joint13.csv" />
+		<experiment id="join2" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="ml100k2.joint.csv,ml100k1.csv" outputFile="ml100k.joint3.csv" />
 		<experiment id="split" type="other" class="WrapRec.Utils.FileSplitter" sourceReader="kollekt-fol" part1Reader="kollekt-fol-train" part2Reader="kollekt-fol-test" part1Ratio="0.75" />
 	</experiments>
 </wraprec>

@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IO\MultiLevelFeedbackCsvReader.cs" />
+    <Compile Include="IO\RatingAsMultiLevelFeedbackCsvReader.cs" />
     <Compile Include="Models\BPRFM.cs" />
     <Compile Include="Models\MmlBprfmRecommender.cs" />
     <Compile Include="Models\MultiLevelBPRFM.cs" />
