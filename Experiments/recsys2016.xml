@@ -11,8 +11,8 @@
 		</model>
 		<model id="mlbprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
 			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="10" NumIter="50"
-				UniformUserSampling="false,true" NegSampler="OnlyUnobserved,OnlyObserved,CombinedSampling"
-				UnobservedSamplingMethod="UniformFeedback,UniformItem" NumObservedNeg="" NumUnobservedNeg="" />
+				UniformUserSampling="true" NegSampler="OnlyUnobserved,OnlyObserved,CombinedSampling"
+				UnobservedSamplingMethod="Dynamic" NumObservedNeg="" NumUnobservedNeg="" />
 		</model>
 		<model id="mp" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.MostPopular"/>
@@ -156,7 +156,7 @@
 		<experiment id="ml100k1" models="bmf,mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 		<experiment id="ml100k5" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 
-		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint17.csv,kollekt19.csv" outputFile="kollekt.joint18.csv" />
+		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint18.csv,kollekt16.csv" outputFile="kollekt.joint19.csv" />
 		<experiment id="join2" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="ml100k2.joint.csv,ml100k1.csv" outputFile="ml100k.joint3.csv" />
 		<experiment id="split" type="other" class="WrapRec.Utils.FileSplitter" sourceReader="kollekt-fol" part1Reader="kollekt-fol-train" part2Reader="kollekt-fol-test" part1Ratio="0.75" />
 	</experiments>

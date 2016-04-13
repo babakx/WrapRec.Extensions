@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WrapRec.Core;
+using MathNet.Numerics.Distributions;
+using LinqLib.Sequence;
+using LinqLib.Operators;
 
 namespace WrapRec.Extensions.Models
 {
@@ -36,6 +39,17 @@ namespace WrapRec.Extensions.Models
         public int NumUnobservedNeg { get; set; }
         public NegSampler NegSampler { get; set;}
 		public UnobservedSamplingMethod UnobservedSamplingMethod { get; set; }
+		public float Lambda { get; set; }
+
+		Categorical _rankSampler;
+		Dictionary<int, List<string>> _factorBasedRank;
+		float[] _itemFactorsStdev;
+
+		public MultiLevelBPRFM()
+			: base()
+		{
+			Lambda = 500f;
+		}
 
         protected override void InitModel()
 		{
@@ -89,6 +103,23 @@ namespace WrapRec.Extensions.Models
 				UserFeedbackLevels = UserFeedback.ToDictionary(g => g.Key, 
 					g => g.Value.Select(f => f.Level).Distinct().OrderByDescending(l => l).ToList());
 			}
+
+			// initialize dynamic sampler
+			_factorBasedRank = new Dictionary<int, List<string>>();
+
+			double[] rankingPro = new double[AllItems.Count];
+			double sum = 0;
+			for (int i = 0; i < AllItems.Count; i++)
+			{
+				rankingPro[i] = Math.Exp(-(i + 1.0) / Lambda);
+				sum += rankingPro[i];
+			}
+			for (int i = 0; i < AllItems.Count; i++)
+				rankingPro[i] /= sum;
+
+			_rankSampler = new Categorical(rankingPro);
+
+			_itemFactorsStdev = new float[AllItems.Count];
 		}
 
         protected virtual Feedback SamplePosFeedback()
@@ -150,7 +181,13 @@ namespace WrapRec.Extensions.Models
 					neg = new Feedback(posFeedback.User, Split.Container.Items[itemId]);
 					break;
 				case UnobservedSamplingMethod.Dynamic:
-					throw new NotImplementedException();
+					string negItemId;
+					do
+					{
+						negItemId = SampleNegItemDynamic(posFeedback);
+					} while (UserFeedback[posFeedback.User.Id].Select(f => f.Item.Id).Contains(negItemId));
+					neg = new Feedback(posFeedback.User, Split.Container.Items[negItemId]);
+					break;
 				default:
 					break;
 			}
@@ -198,6 +235,9 @@ namespace WrapRec.Extensions.Models
 
 			for (int i = 0; i < Feedback.Count; i++)
 			{
+				if (UnobservedSamplingMethod == UnobservedSamplingMethod.Dynamic && i % (AllItems.Count * Math.Log(AllItems.Count)) == 0)
+					UpdateDynamicSampler();
+				
 				var pos = SamplePosFeedback();
 				var neg = negSampler(pos);
 
@@ -207,6 +247,50 @@ namespace WrapRec.Extensions.Models
 
 				UpdateFactors(user_id, item_id, other_item_id, true, true, update_j);
 			}
+		}
+
+		protected virtual void UpdateDynamicSampler()
+		{
+ 
+			for (int f = 0; f < NumFactors; f++)
+			{
+				_factorBasedRank[f] = AllItems.OrderByDescending(iId => Math.Abs(item_factors[ItemsMap.ToInternalID(iId), f])).ToList();
+				_itemFactorsStdev[f] = AllItems.Select(iId => item_factors[ItemsMap.ToInternalID(iId), f]).Stdev();
+			}
+		}
+
+		protected virtual string SampleNegItemDynamic(Feedback posFeedback)
+		{
+			// sample r
+			int r;
+
+			do
+			{
+				r = _rankSampler.Sample();
+			} while (r >= AllItems.Count);
+
+			int user_id = UsersMap.ToInternalID(posFeedback.User.Id);
+			var u = user_factors.GetRow(user_id);
+
+			// sample f from p(f|c)
+			double sum = 0;
+			for (int i = 0; i < NumFactors; i++)
+				sum += Math.Abs(u[i]) * _itemFactorsStdev[i];
+
+			double[] probs = new double[NumFactors];
+			for (int i = 0; i < NumFactors; i++)
+				probs[i] = Math.Abs(u[i]) * _itemFactorsStdev[i] / sum;
+
+			int f = new Categorical(probs).Sample();
+
+			// take item j (negItemId) from position r of the list of sampled f
+			string negItemId;
+			if (Math.Sign(user_factors[user_id, f]) > 0)
+				negItemId = _factorBasedRank[f][r];
+			else
+				negItemId = _factorBasedRank[f][AllItems.Count - r - 1];
+
+			return negItemId;
 		}
 
 		public override void Train()
