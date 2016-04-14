@@ -119,7 +119,7 @@ namespace WrapRec.Extensions.Models
 
 			_rankSampler = new Categorical(rankingPro);
 
-			_itemFactorsStdev = new float[AllItems.Count];
+			_itemFactorsStdev = new float[NumFactors];
 		}
 
         protected virtual Feedback SamplePosFeedback()
