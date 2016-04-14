@@ -14,7 +14,7 @@
 		</model>
 		<model id="mlbprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
 			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="10" NumIter="50"
-				IsRatingBased="true" UniformUserSampling="false,true" NegSampler="OnlyUnobserved,OnlyObserved,CombinedSampling"
+				UniformUserSampling="false,true" NegSampler="OnlyUnobserved,OnlyObserved,CombinedSampling"
 				UnobservedSamplingMethod="Dynamic,UniformFeedback,UniformItem" NumObservedNeg="" NumUnobservedNeg="" />
 		</model>
 		<model id="mp" class="WrapRec.Models.MmlRecommender">
@@ -144,7 +144,7 @@
 		</evalContext>
 	</evalContexts>
 	
-	<experiments run="ml1m1" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
+	<experiments run="ml100k4,kollekt19" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
 		<experiment id="kollekt1" models="libfm" splits="kollekt-fav" evalContext="ranking" />
 		<experiment id="kollekt2" models="libfm" splits="kollekt-fol" evalContext="ranking" />
 		<experiment id="kollekt3" models="mp,bprmf,uknn,libfm" splits="kollekt-lis" evalContext="ranking" />

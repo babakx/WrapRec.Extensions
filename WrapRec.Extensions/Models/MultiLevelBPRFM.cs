@@ -33,7 +33,6 @@ namespace WrapRec.Extensions.Models
 		public List<Feedback> TrainFeedback { get; private set; }
 		public List<string> AllItems { get; private set; }
         public List<Feedback> AllPosFeedback { get; set; }
-		public bool IsRatingBased { get; set; }
         public int[] Levels { get; set; }
         public int NumObservedNeg { get; set; }
         public int NumUnobservedNeg { get; set; }
@@ -54,56 +53,8 @@ namespace WrapRec.Extensions.Models
         protected override void InitModel()
 		{
 			base.InitModel();
+			CacheSplitData();
             
-            // make sure the train and test items are specified in the Container
-            Split.UpdateFeedbackSlices();
-            TrainFeedback = Split.Train.ToList();
-            Levels = Split.Train.Select(f => f.Level).Distinct().OrderByDescending(l => l).ToArray();
-
-            // index user pos and negative feedback 
-			UserFeedback = new Dictionary<string, List<Feedback>>();
-			UserPosFeedback = new Dictionary<string, List<Feedback>>();
-			UserNegFeedback = new Dictionary<string, List<Feedback>>();
-			UserFeedbackLevels = new Dictionary<string, List<int>>();
-            AllPosFeedback = new List<Feedback>();
-			AllItems = Split.Train.Select(f => f.Item.Id).Distinct().ToList();
-
-			var usersFeedback = Split.Train.GroupBy(f => f.User);
-			if (IsRatingBased)
-			{
-				foreach (var g in usersFeedback)
-				{
-					float ratingAvg = g.Average(f => ((Rating)f).Value);
-                    string userId = g.Key.Id;
-					UserFeedback[userId] = new List<Feedback>();
-					UserPosFeedback[userId] = new List<Feedback>();
-                    UserNegFeedback[userId] = new List<Feedback>();
-					UserFeedbackLevels[userId] = g.Select(f => f.Level).Distinct().OrderByDescending(l => l).ToList();
-
-                    foreach (Rating f in g)
-                    {
-						UserFeedback[userId].Add(f);
-						
-						if (f.Value > ratingAvg)
-                        {
-                            UserPosFeedback[userId].Add(f);
-                            AllPosFeedback.Add(f);
-                        }
-                        else
-                            UserNegFeedback[userId].Add(f);
-                    }
-				}
-			}
-			else
-			{
-				UserPosFeedback = usersFeedback.ToDictionary(g => g.Key.Id, g => g.ToList());
-				UserNegFeedback = usersFeedback.ToDictionary(g => g.Key.Id, g => new List<Feedback>());
-				UserFeedback = UserPosFeedback;
-				AllPosFeedback = TrainFeedback;
-				UserFeedbackLevels = UserFeedback.ToDictionary(g => g.Key, 
-					g => g.Value.Select(f => f.Level).Distinct().OrderByDescending(l => l).ToList());
-			}
-
 			// initialize dynamic sampler
 			_factorBasedRank = new Dictionary<int, List<string>>();
 
@@ -120,6 +71,64 @@ namespace WrapRec.Extensions.Models
 			_rankSampler = new Categorical(rankingPro);
 
 			_itemFactorsStdev = new float[NumFactors];
+		}
+
+
+		protected virtual void CacheSplitData()
+		{
+			// make sure the train and test items are specified in the Container
+			Split.UpdateFeedbackSlices();
+			TrainFeedback = Split.Train.ToList();
+			Levels = Split.Train.Select(f => f.Level).Distinct().OrderByDescending(l => l).ToArray();
+			
+			UserFeedback = new Dictionary<string, List<Feedback>>();
+			UserPosFeedback = new Dictionary<string, List<Feedback>>();
+			UserNegFeedback = new Dictionary<string, List<Feedback>>();
+			UserFeedbackLevels = new Dictionary<string, List<int>>();
+			AllPosFeedback = new List<Feedback>();
+			AllItems = Split.Train.Select(f => f.Item.Id).Distinct().ToList();
+
+			var usersFeedback = Split.Train.GroupBy(f => f.User);
+			foreach (var g in usersFeedback)
+			{
+				string userId = g.Key.Id;
+				UserFeedback[userId] = new List<Feedback>();
+				UserPosFeedback[userId] = new List<Feedback>();
+				UserNegFeedback[userId] = new List<Feedback>();
+				UserFeedbackLevels[userId] = g.Select(f => f.Level).Distinct().OrderByDescending(l => l).ToList();
+
+				float ratingAvg = -1f;
+				if (g.First() is Rating)
+					ratingAvg = g.Average(f => ((Rating)f).Value);
+
+				foreach (Feedback f in g)
+				{
+					UserFeedback[f.User.Id].Add(f);
+
+					// determine whether the feedback is positive, negative or rating and add that to the right list
+					switch (f.FeedbackType)
+					{
+						case FeedbackType.Positive:
+							UserPosFeedback[f.User.Id].Add(f);
+							AllPosFeedback.Add(f);
+							break;
+						case FeedbackType.Negative:
+							UserNegFeedback[f.User.Id].Add(f);
+							break;
+						case FeedbackType.Rating:
+							if (((Rating)f).Value >= ratingAvg)
+							{
+								UserPosFeedback[f.User.Id].Add(f);
+								AllPosFeedback.Add(f);
+							}
+							else
+								UserNegFeedback[f.User.Id].Add(f);
+							break;
+						default:
+							break;
+					}
+				}
+			}
 		}
 
         protected virtual Feedback SamplePosFeedback()
@@ -251,8 +260,7 @@ namespace WrapRec.Extensions.Models
 
 		protected virtual void UpdateDynamicSampler()
 		{
- 
-			for (int f = 0; f < NumFactors; f++)
+ 			for (int f = 0; f < NumFactors; f++)
 			{
 				_factorBasedRank[f] = AllItems.OrderByDescending(iId => Math.Abs(item_factors[ItemsMap.ToInternalID(iId), f])).ToList();
 				_itemFactorsStdev[f] = AllItems.Select(iId => item_factors[ItemsMap.ToInternalID(iId), f]).Stdev();
