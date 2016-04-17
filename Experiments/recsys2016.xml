@@ -14,8 +14,8 @@
 		</model>
 		<model id="mlbprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
 			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="10" NumIter="50"
-				UniformUserSampling="false" NegSampler="OnlyUnobserved,OnlyObserved,CombinedSampling"
-				UnobservedSamplingMethod="Dynamic,UniformFeedback,UniformItem" NumObservedNeg="" NumUnobservedNeg="" />
+				PosSampler="DynamicLevel,UniformFeedback" NegSampler="OnlyUnobserved,CombinedSampling,OnlyObserved"
+				UnobservedSamplingMethod="UniformItem,UniformFeedback,Dynamic" NumObservedNeg="" NumUnobservedNeg="" />
 		</model>
 		<model id="mp" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.MostPopular"/>
@@ -53,6 +53,19 @@
 
 			<reader id="30m-lov-test-ml" path="D:\Dropbox\University\RecSys 2016\dataset\30M Music\30Mfiltered50Love_test.txt" sliceType="test" dataType="posFeedback"
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,love:n" delimiter="," />
+
+			<!-- Xing -->
+			<reader id="xing-bookmark-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition10\bookmark.txt" sliceType="other" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId" delimiter="," level="2" />
+
+			<reader id="xing-click-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition10\click.txt" sliceType="other" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId" delimiter="," level="1" />
+
+			<reader id="xing-reply-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition10\reply.txt" sliceType="other" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId" delimiter="," level="3" />
+
+			<reader id="xing-remove-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition10\remove.txt" sliceType="other" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId" delimiter="," level="-1" />
 
 			<!-- Kollekt -->
 			<reader id="kollekt-fol" path="D:\Dropbox\Datasets\Kollectfm\user_playlist.csv" sliceType="other" dataType="posFeedback"
@@ -95,13 +108,13 @@
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," level="3" />
 
 			<reader id="kollekt-fav-05-ml" path="D:\Dropbox\University\RecSys 2016\dataset\userPlFavRatio\05.txt" sliceType="train" dataType="posFeedback"
-				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," header="userId,playlistId,favRatio:n" level="3" />
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," header="userId,playlistId,favRatio:n" level="1" />
 
 			<reader id="kollekt-fav-01-ml" path="D:\Dropbox\University\RecSys 2016\dataset\userPlFavRatio\01.txt" sliceType="train" dataType="posFeedback"
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," header="userId,playlistId,favRatio:n" level="1" />
 
 			<reader id="kollekt-lis-01-ml" path="D:\Dropbox\University\RecSys 2016\dataset\userPlSecondsRatio\userPlSecondsRatio01.txt" sliceType="train" dataType="posFeedback"
-				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," header="userId,playlistId,listenRatio:n" level="1" />
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="true" delimiter="," header="userId,playlistId,listenRatio:n" level="2" />
 		</dataReaders>
 		
 		<dataContainers>
@@ -110,7 +123,9 @@
 			<dataContainer id="ml20m-ml" dataReaders="ml20m-ml" />
 
 			<dataContainer id="30m-all-ml" dataReaders="30m-lov-train-ml,30m-lov-test-ml,30m-lis-ml" allowDuplicates="true" />
-			
+
+			<dataContainer id="xing-all-ml" dataReaders="xing-bookmark-ml,xing-click-ml,xing-reply-ml,xing-remove-ml" allowDuplicates="true" />
+
 			<dataContainer id="kollekt-fav" dataReaders="kollekt-fav-01" />
 			<dataContainer id="kollekt-fol" dataReaders="kollekt-fol" />
 			<dataContainer id="kollekt-lis" dataReaders="kollekt-lis-01" />
@@ -126,6 +141,7 @@
 			<dataContainer id="kollekt-lis-s-attr" dataReaders="kollekt-lis-01,kollekt-fol-test,kollekt-user-fb-likes" />
 
 			<dataContainer id="kollekt-all-ml" dataReaders="kollekt-fol-train-ml,kollekt-fol-test-ml,kollekt-fav-05-ml,kollekt-lis-01-ml" allowDuplicates="true" />
+			<dataContainer id="kollekt-fol-lis-ml" dataReaders="kollekt-fol-train-ml,kollekt-fol-test-ml,kollekt-lis-01-ml" allowDuplicates="true" />
 		</dataContainers>
 	</data>
 
@@ -133,6 +149,8 @@
 		<split id="ml100k-ml" type="dynamic" dataContainer="ml100k-ml" trainRatios="0.75" />
 		<split id="ml1m-ml" type="dynamic" dataContainer="ml1m-ml" trainRatios="0.75" />
 		<split id="ml100k-test" type="crossvalidation" dataContainer="ml100k-ml" numFolds="4" />
+
+		<split id="xing-all-ml" type="dynamic" dataContainer="xing-all-ml" trainRatios="0.75" />
 
 		<split id="kollekt-fav" type="dynamic" dataContainer="kollekt-fav" trainRatios="0.75" />
 		<split id="kollekt-fol" type="dynamic" dataContainer="kollekt-fol" trainRatios="0.75" />
@@ -150,6 +168,7 @@
 		<split id="kollekt-lis-s-attr" type="static" dataContainer="kollekt-lis-s-attr" />
 
 		<split id="kollekt-all-ml" type="static" dataContainer="kollekt-all-ml"/>
+		<split id="kollekt-fol-lis-ml" type="static" dataContainer="kollekt-fol-lis-ml"/>
 	</splits>
 	
 	<evalContexts>
@@ -158,7 +177,7 @@
 			<evaluator class="WrapRec.Evaluation.MAE" />
 		</evalContext>
 		<evalContext id="rating-ranking">
-			<evaluator class="WrapRec.Evaluation.RatingBasedRankingEvaluatorsOpr" candidateItemsMode="training" numCandidates="100,1000" cutOffs="5,10,20" relevanceThreshold="4"  />
+			<evaluator class="WrapRec.Evaluation.RatingBasedRankingEvaluatorsOpr" candidateItemsMode="training" numCandidates="100,1000" cutOffs="5,10,20"  />
 		</evalContext>
 		<evalContext id="ranking">
 			<evaluator class="WrapRec.Evaluation.RankingEvaluators" candidateItemsMode="training" numCandidates="100,1000" cutOffs="5,10,20"  />
@@ -171,7 +190,7 @@
 		</evalContext>
 	</evalContexts>
 	
-	<experiments run="split" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
+	<experiments run="join2" resultsFolder="D:\Dropbox\Datasets\Wraprec Results\final" subFolder="false" separator="\t" verbosity="info">
 		<experiment id="kollekt1" models="libfm" splits="kollekt-fav" evalContext="ranking" />
 		<experiment id="kollekt2" models="libfm" splits="kollekt-fol" evalContext="ranking" />
 		<experiment id="kollekt3" models="mp,bprmf,uknn,libfm" splits="kollekt-lis" evalContext="ranking" />
@@ -188,16 +207,21 @@
 		<experiment id="kollekt17" models="bprmf" splits="kollekt-all-ml" evalContext="ranking" />
 		<experiment id="kollekt18" models="bprfm" splits="kollekt-all-ml" evalContext="ranking" />
 		<experiment id="kollekt21" models="mlbprfm" splits="kollekt-all-ml" evalContext="ranking" />
+		<experiment id="kollekt22" models="mlbprfm" splits="kollekt-fol-lis-ml" evalContext="ranking" />
+		<experiment id="kollekt24" models="mlbprfm" splits="kollekt-all" evalContext="ranking" />
+
+		<experiment id="xing1" models="mlbprfm" splits="xing-all-ml" evalContext="ranking" />
 
 		<experiment id="ml100k1" models="bmf,mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 		<experiment id="ml100k4" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
+		<experiment id="ml100k5" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 
 		<experiment id="ml100k-test" models="mf,bmf" splits="ml100k-test" evalContext="rating-ranking" />
 
 		<experiment id="ml1m1" models="mlbprfm" splits="ml1m-ml" evalContext="rating-ranking" />
 
-		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint19.csv,kollekt20.csv" outputFile="kollekt.joint20.csv" />
-		<experiment id="join2" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="ml100k2.joint.csv,ml100k1.csv" outputFile="ml100k.joint3.csv" />
+		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint21.csv,kollekt22.csv" outputFile="kollekt.joint22.csv" />
+		<experiment id="join2" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="ml100k.join1.csv,ml100k5.csv" outputFile="ml100k.joint3.csv" />
 		<experiment id="split" type="other" class="WrapRec.Utils.FileSplitter" sourceReader="30m-lov-ml" part1Reader="30m-lov-train-ml" part2Reader="30m-lov-test-ml" part1Ratio="0.75" />
 	</experiments>
 </wraprec>

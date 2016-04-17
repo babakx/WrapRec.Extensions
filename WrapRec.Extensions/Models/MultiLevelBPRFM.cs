@@ -10,7 +10,15 @@ using LinqLib.Operators;
 
 namespace WrapRec.Extensions.Models
 {
-    public enum NegSampler
+	public enum PosSampler
+	{ 
+		UniformUser,
+		UniformLevel,
+		DynamicLevel,
+		UniformFeedback
+	}
+	
+	public enum NegSampler
     {
         CombinedSampling,
         OnlyObserved,
@@ -29,32 +37,38 @@ namespace WrapRec.Extensions.Models
 		public Dictionary<string, List<Feedback>> UserFeedback { get; private set; }
 		public Dictionary<string, List<Feedback>> UserPosFeedback { get; private set; }
         public Dictionary<string, List<Feedback>> UserNegFeedback { get; private set; }
+		public Dictionary<int, List<Feedback>> LevelPosFeedback { get; set; }
 		public Dictionary<string, List<int>> UserFeedbackLevels { get; private set; }
 		public List<Feedback> TrainFeedback { get; private set; }
 		public List<string> AllItems { get; private set; }
         public List<Feedback> AllPosFeedback { get; set; }
         public int[] Levels { get; set; }
+		public List<int> PosLevels { get; private set; }
         public int NumObservedNeg { get; set; }
         public int NumUnobservedNeg { get; set; }
-        public NegSampler NegSampler { get; set;}
+		public PosSampler PosSampler { get; set; }
+		public NegSampler NegSampler { get; set;}
 		public UnobservedSamplingMethod UnobservedSamplingMethod { get; set; }
 		public float Lambda { get; set; }
-
+		public float LambdaLevel { get; set; }
+		
 		Categorical _rankSampler;
 		Dictionary<int, List<string>> _factorBasedRank;
 		float[] _itemFactorsStdev;
+		Categorical _levelSampler;
 
 		public MultiLevelBPRFM()
 			: base()
 		{
 			Lambda = 500f;
+			LambdaLevel = 10f;
 		}
 
         protected override void InitModel()
 		{
 			base.InitModel();
 			CacheSplitData();
-            
+
 			// initialize dynamic sampler
 			_factorBasedRank = new Dictionary<int, List<string>>();
 
@@ -69,8 +83,20 @@ namespace WrapRec.Extensions.Models
 				rankingPro[i] /= sum;
 
 			_rankSampler = new Categorical(rankingPro);
-
 			_itemFactorsStdev = new float[NumFactors];
+
+			// initialize dynamic level sampler
+			if (PosSampler == PosSampler.DynamicLevel)
+			{
+				// key is levelNo, value id list of feedback in that level
+				sum = LevelPosFeedback.Sum(kv => kv.Key * kv.Value.Count);
+				double[] levelPro = new double[PosLevels.Count];
+
+				for (int i = 0; i < PosLevels.Count; i++)
+					levelPro[i] = 1.0f * PosLevels[i] * LevelPosFeedback[PosLevels[i]].Count / sum;
+				
+				_levelSampler = new Categorical(levelPro);
+			}
 		}
 
 
@@ -80,13 +106,16 @@ namespace WrapRec.Extensions.Models
 			Split.UpdateFeedbackSlices();
 			TrainFeedback = Split.Train.ToList();
 			Levels = Split.Train.Select(f => f.Level).Distinct().OrderByDescending(l => l).ToArray();
-			
+			PosLevels = new List<int>();
+
 			UserFeedback = new Dictionary<string, List<Feedback>>();
 			UserPosFeedback = new Dictionary<string, List<Feedback>>();
 			UserNegFeedback = new Dictionary<string, List<Feedback>>();
 			UserFeedbackLevels = new Dictionary<string, List<int>>();
 			AllPosFeedback = new List<Feedback>();
 			AllItems = Split.Train.Select(f => f.Item.Id).Distinct().ToList();
+
+			LevelPosFeedback = new Dictionary<int, List<Feedback>>();
 
 			var usersFeedback = Split.Train.GroupBy(f => f.User);
 			foreach (var g in usersFeedback)
@@ -111,6 +140,13 @@ namespace WrapRec.Extensions.Models
 						case FeedbackType.Positive:
 							UserPosFeedback[f.User.Id].Add(f);
 							AllPosFeedback.Add(f);
+
+							if (!LevelPosFeedback.ContainsKey(f.Level))
+							{
+								LevelPosFeedback[f.Level] = new List<Feedback>();
+								PosLevels.Add(f.Level);
+							}
+							LevelPosFeedback[f.Level].Add(f);
 							break;
 						case FeedbackType.Negative:
 							UserNegFeedback[f.User.Id].Add(f);
@@ -120,6 +156,12 @@ namespace WrapRec.Extensions.Models
 							{
 								UserPosFeedback[f.User.Id].Add(f);
 								AllPosFeedback.Add(f);
+								if (!LevelPosFeedback.ContainsKey(f.Level))
+								{
+									LevelPosFeedback[f.Level] = new List<Feedback>();
+									PosLevels.Add(f.Level);
+								}
+								LevelPosFeedback[f.Level].Add(f);
 							}
 							else
 								UserNegFeedback[f.User.Id].Add(f);
@@ -129,20 +171,38 @@ namespace WrapRec.Extensions.Models
 					}
 				}
 			}
+			
+			Logger.Current.Info("Number of feedbacks:");
+			LevelPosFeedback.Select(kv => new { Level = kv.Key, Count = kv.Value.Count })
+				.OrderByDescending(l => l.Level)
+				.Select(l => string.Format("Level {0}: {1}", l.Level, l.Count))
+				.ForEach(l => Logger.Current.Info(l));
+			Logger.Current.Info("");
 		}
 
         protected virtual Feedback SamplePosFeedback()
         {
-            if (UniformUserSampling)
-            {
-                string userIdOrg = UsersMap.ToOriginalID(SampleUser());
-                var userPosFeedback = UserPosFeedback[userIdOrg];
-                return userPosFeedback[random.Next(userPosFeedback.Count)];
-            }
-            else
-            {
-                return AllPosFeedback[random.Next(AllPosFeedback.Count)];
-            }
+			switch (PosSampler)
+			{
+				case PosSampler.UniformUser:
+					string userIdOrg = UsersMap.ToOriginalID(SampleUser());
+					var userPosFeedback = UserPosFeedback[userIdOrg];
+					return userPosFeedback[random.Next(userPosFeedback.Count)];
+				case PosSampler.UniformLevel:
+					int level = PosLevels[random.Next(PosLevels.Count)];
+					// uniform feedback sampling from a level
+					int index = random.Next(LevelPosFeedback[level].Count);
+					return LevelPosFeedback[level][index];
+				case PosSampler.DynamicLevel:
+					int l = PosLevels[_levelSampler.Sample()];
+					int i = random.Next(LevelPosFeedback[l].Count);
+					return LevelPosFeedback[l][i];
+				case PosSampler.UniformFeedback:
+					return AllPosFeedback[random.Next(AllPosFeedback.Count)];
+				default:
+					return null;
+			}
+			
         }
 
 		protected virtual Feedback SampleObservedNegFeedback(Feedback posFeedback)
@@ -267,6 +327,7 @@ namespace WrapRec.Extensions.Models
 			}
 		}
 
+		
 		protected virtual string SampleNegItemDynamic(Feedback posFeedback)
 		{
 			// sample r

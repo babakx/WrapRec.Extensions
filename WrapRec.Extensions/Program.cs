@@ -10,6 +10,7 @@ namespace WrapRec.Extensions
     {
         static void Main(string[] args)
         {
+			// empty
         }
     }
 }
