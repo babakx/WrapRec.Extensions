@@ -20,7 +20,8 @@ namespace WrapRec.Extensions.IO
 
 		protected override void EnrichFeedback(Feedback feedback)
 		{
-			feedback.Level = Level;
+			if (feedback.Level == 0)
+				feedback.Level = Level;
 			if (Level < 0)
 				feedback.FeedbackType = FeedbackType.Negative;
 		}

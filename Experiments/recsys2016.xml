@@ -15,7 +15,7 @@
 		<model id="mlbprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
 			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="10" NumIter="50"
 				PosSampler="DynamicLevel,UniformFeedback" NegSampler="OnlyUnobserved,CombinedSampling,OnlyObserved"
-				UnobservedSamplingMethod="UniformItem,UniformFeedback,Dynamic" NumObservedNeg="" NumUnobservedNeg="" />
+				UnobservedSamplingMethod="UniformFeedback" NumObservedNeg="" NumUnobservedNeg="" />
 		</model>
 		<model id="mp" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.MostPopular"/>
@@ -55,16 +55,16 @@
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,love:n" delimiter="," />
 
 			<!-- Xing -->
-			<reader id="xing-bookmark-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition10\bookmark.txt" sliceType="other" dataType="posFeedback"
+			<reader id="xing-bookmark-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition20\bookmark.txt" sliceType="other" dataType="posFeedback"
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId" delimiter="," level="2" />
 
-			<reader id="xing-click-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition10\click.txt" sliceType="other" dataType="posFeedback"
+			<reader id="xing-click-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition20\click.txt" sliceType="other" dataType="posFeedback"
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId" delimiter="," level="1" />
 
-			<reader id="xing-reply-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition10\reply.txt" sliceType="other" dataType="posFeedback"
+			<reader id="xing-reply-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition20\reply.txt" sliceType="other" dataType="posFeedback"
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId" delimiter="," level="3" />
 
-			<reader id="xing-remove-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition10\remove.txt" sliceType="other" dataType="posFeedback"
+			<reader id="xing-remove-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition20\remove.txt" sliceType="train" dataType="posFeedback"
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId" delimiter="," level="-1" />
 
 			<!-- Kollekt -->
@@ -124,7 +124,7 @@
 
 			<dataContainer id="30m-all-ml" dataReaders="30m-lov-train-ml,30m-lov-test-ml,30m-lis-ml" allowDuplicates="true" />
 
-			<dataContainer id="xing-all-ml" dataReaders="xing-bookmark-ml,xing-click-ml,xing-reply-ml,xing-remove-ml" allowDuplicates="true" />
+			<dataContainer id="xing-all-ml" dataReaders="xing-bookmark-ml,xing-click-ml,xing-reply-ml,xing-remove-ml" allowDuplicates="false" />
 
 			<dataContainer id="kollekt-fav" dataReaders="kollekt-fav-01" />
 			<dataContainer id="kollekt-fol" dataReaders="kollekt-fol" />
@@ -190,7 +190,7 @@
 		</evalContext>
 	</evalContexts>
 	
-	<experiments run="join2" resultsFolder="D:\Dropbox\Datasets\Wraprec Results\final" subFolder="false" separator="\t" verbosity="info">
+	<experiments run="xing2" resultsFolder="D:\Dropbox\Datasets\Wraprec Results\final" subFolder="false" separator="\t" verbosity="info">
 		<experiment id="kollekt1" models="libfm" splits="kollekt-fav" evalContext="ranking" />
 		<experiment id="kollekt2" models="libfm" splits="kollekt-fol" evalContext="ranking" />
 		<experiment id="kollekt3" models="mp,bprmf,uknn,libfm" splits="kollekt-lis" evalContext="ranking" />
@@ -210,7 +210,7 @@
 		<experiment id="kollekt22" models="mlbprfm" splits="kollekt-fol-lis-ml" evalContext="ranking" />
 		<experiment id="kollekt24" models="mlbprfm" splits="kollekt-all" evalContext="ranking" />
 
-		<experiment id="xing1" models="mlbprfm" splits="xing-all-ml" evalContext="ranking" />
+		<experiment id="xing2" models="mlbprfm" splits="xing-all-ml" evalContext="ranking" />
 
 		<experiment id="ml100k1" models="bmf,mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 		<experiment id="ml100k4" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
