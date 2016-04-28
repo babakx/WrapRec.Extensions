@@ -9,16 +9,34 @@
 		<model id="bprmf" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.BPRMF" NumFactors="10" NumIter="50" WithReplacement="false,true" UniformUserSampling="false,true" />
 		</model>
+		<model id="random" class="WrapRec.Models.MmlRecommender">
+			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.Random" />
+		</model>
+		<model id="mp" class="WrapRec.Models.MmlRecommender">
+			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.MostPopular" />
+		</model>
 		<model id="bprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
 			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.BPRFM" NumFactors="10" NumIter="50" WithReplacement="false,true" UniformUserSampling="false,true" />
 		</model>
 		<model id="mlbprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
-			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="10" NumIter="50"
-				PosSampler="DynamicLevel,UniformFeedback" NegSampler="OnlyUnobserved,CombinedSampling,OnlyObserved"
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="50" NumIter="100"
+				PosSampler="DynamicLevel" NegSampler="CombinedSampling" UnobservedRatio="1"
 				UnobservedSamplingMethod="UniformFeedback" NumObservedNeg="" NumUnobservedNeg="" />
 		</model>
-		<model id="mp" class="WrapRec.Models.MmlRecommender">
-			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.MostPopular"/>
+		<model id="mlbprfm2" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="20" NumIter="50"
+				PosSampler="UniformFeedback" NegSampler="OnlyUnobserved" UnobservedRatio="1"
+				UnobservedSamplingMethod="UniformItem,UniformFeedback" NumObservedNeg="" NumUnobservedNeg="" />
+		</model>
+		<model id="mlbprfm3" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="20" NumIter="50"
+				PosSampler="DynamicLevel" NegSampler="CombinedSampling" UnobservedRatio="0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1"
+				UnobservedSamplingMethod="Dynamic" NumObservedNeg="" NumUnobservedNeg="" />
+		</model>
+		<model id="mlbprfm4" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="20" NumIter="50"
+				PosSampler="DynamicLevel" NegSampler="CombinedSampling" UnobservedRatio="0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1"
+				UnobservedSamplingMethod="UniformItem" NumObservedNeg="" NumUnobservedNeg="" />
 		</model>
 		<model id="uknn" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.UserKNN" K="40,80"/>
@@ -42,17 +60,17 @@
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.RatingAsMultiLevelFeedbackCsvReader" hasHeader="true" header="userId,itemId,rating,timestamp:n" delimiter="," />
 
 			<!-- 30M Music -->
-			<reader id="30m-lis-ml" path="D:\Dropbox\University\RecSys 2016\dataset\30M Music\30Mfiltered50Listen.txt" sliceType="other" dataType="posFeedback"
-				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId" delimiter="," />
+			<reader id="30m-lis-ml" path="D:\Dropbox\University\RecSys 2016\dataset\30M Music\listenFiltered.txt" sliceType="other" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId" delimiter="," level="1" />
 
-			<reader id="30m-lov-ml" path="D:\Dropbox\University\RecSys 2016\dataset\30M Music\30Mfiltered50Love.txt" sliceType="other" dataType="posFeedback"
-				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,love:n" delimiter="," />
+			<reader id="30m-lov-ml" path="D:\Dropbox\University\RecSys 2016\dataset\30M Music\loveFiltered.txt" sliceType="other" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,love:n" delimiter="," level="2" />
 
-			<reader id="30m-lov-train-ml" path="D:\Dropbox\University\RecSys 2016\dataset\30M Music\30Mfiltered50Love_train.txt" sliceType="train" dataType="posFeedback"
-				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,love:n" delimiter="," />
+			<reader id="30m-lov-train-ml" path="D:\Dropbox\University\RecSys 2016\dataset\30M Music\loveFiltered_train.txt" sliceType="train" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,love:n" delimiter="," level="2" />
 
-			<reader id="30m-lov-test-ml" path="D:\Dropbox\University\RecSys 2016\dataset\30M Music\30Mfiltered50Love_test.txt" sliceType="test" dataType="posFeedback"
-				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,love:n" delimiter="," />
+			<reader id="30m-lov-test-ml" path="D:\Dropbox\University\RecSys 2016\dataset\30M Music\loveFiltered_test.txt" sliceType="test" dataType="posFeedback"
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.MultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,love:n" delimiter="," level="2" />
 
 			<!-- Xing -->
 			<reader id="xing-bookmark-ml" path="D:\Dropbox\University\RecSys 2016\dataset\competition20\bookmark.txt" sliceType="other" dataType="posFeedback"
@@ -122,7 +140,7 @@
 			<dataContainer id="ml1m-ml" dataReaders="ml1m-ml" />
 			<dataContainer id="ml20m-ml" dataReaders="ml20m-ml" />
 
-			<dataContainer id="30m-all-ml" dataReaders="30m-lov-train-ml,30m-lov-test-ml,30m-lis-ml" allowDuplicates="true" />
+			<dataContainer id="30m-all-ml" dataReaders="30m-lov-train-ml,30m-lov-test-ml,30m-lis-ml" allowDuplicates="false" />
 
 			<dataContainer id="xing-all-ml" dataReaders="xing-bookmark-ml,xing-click-ml,xing-reply-ml,xing-remove-ml" allowDuplicates="false" />
 
@@ -134,13 +152,13 @@
 			<dataContainer id="kollekt-lis-s" dataReaders="kollekt-lis-01,kollekt-fol-test" />
 			<dataContainer id="kollekt-fol-s" dataReaders="kollekt-fol-train,kollekt-fol-test" />
 
-			<dataContainer id="kollekt-all" dataReaders="kollekt-fol-train,kollekt-fol-test,kollekt-fav-01,kollekt-lis-01" allowDuplicates="false" />
+			<dataContainer id="kollekt-all" dataReaders="kollekt-fol-train,kollekt-fol-test,kollekt-fav-05,kollekt-lis-01" allowDuplicates="false" />
 
 			<dataContainer id="kollekt-fol-s-attr" dataReaders="kollekt-fol-train,kollekt-fol-test,kollekt-user-fb-likes" />
 			<dataContainer id="kollekt-fav-s-attr" dataReaders="kollekt-fav-01,kollekt-fol-test,kollekt-user-fb-likes" />
 			<dataContainer id="kollekt-lis-s-attr" dataReaders="kollekt-lis-01,kollekt-fol-test,kollekt-user-fb-likes" />
 
-			<dataContainer id="kollekt-all-ml" dataReaders="kollekt-fol-train-ml,kollekt-fol-test-ml,kollekt-fav-05-ml,kollekt-lis-01-ml" allowDuplicates="true" />
+			<dataContainer id="kollekt-all-ml" dataReaders="kollekt-fol-train-ml,kollekt-fol-test-ml,kollekt-fav-05-ml,kollekt-lis-01-ml" allowDuplicates="false" />
 			<dataContainer id="kollekt-fol-lis-ml" dataReaders="kollekt-fol-train-ml,kollekt-fol-test-ml,kollekt-lis-01-ml" allowDuplicates="true" />
 		</dataContainers>
 	</data>
@@ -151,6 +169,7 @@
 		<split id="ml100k-test" type="crossvalidation" dataContainer="ml100k-ml" numFolds="4" />
 
 		<split id="xing-all-ml" type="dynamic" dataContainer="xing-all-ml" trainRatios="0.75" />
+		<split id="30m-all-ml" type="dynamic" dataContainer="30m-all-ml" trainRatios="0.75" />
 
 		<split id="kollekt-fav" type="dynamic" dataContainer="kollekt-fav" trainRatios="0.75" />
 		<split id="kollekt-fol" type="dynamic" dataContainer="kollekt-fol" trainRatios="0.75" />
@@ -190,7 +209,7 @@
 		</evalContext>
 	</evalContexts>
 	
-	<experiments run="xing2" resultsFolder="D:\Dropbox\Datasets\Wraprec Results\final" subFolder="false" separator="\t" verbosity="info">
+	<experiments run="split" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
 		<experiment id="kollekt1" models="libfm" splits="kollekt-fav" evalContext="ranking" />
 		<experiment id="kollekt2" models="libfm" splits="kollekt-fol" evalContext="ranking" />
 		<experiment id="kollekt3" models="mp,bprmf,uknn,libfm" splits="kollekt-lis" evalContext="ranking" />
@@ -209,12 +228,20 @@
 		<experiment id="kollekt21" models="mlbprfm" splits="kollekt-all-ml" evalContext="ranking" />
 		<experiment id="kollekt22" models="mlbprfm" splits="kollekt-fol-lis-ml" evalContext="ranking" />
 		<experiment id="kollekt24" models="mlbprfm" splits="kollekt-all" evalContext="ranking" />
+		<experiment id="kollekt28" models="mlbprfm4" splits="kollekt-all-ml" evalContext="ranking" />
+		<experiment id="kollekt29" models="mlbprfm" splits="kollekt-all-ml" evalContext="ranking" />
+		
+		<experiment id="baseline2" models="random,mp" splits="30m-all-ml" evalContext="ranking" />
 
 		<experiment id="xing2" models="mlbprfm" splits="xing-all-ml" evalContext="ranking" />
+		<experiment id="xing3" models="mlbprfm,mlbprfm2,mlbprfm3" splits="xing-all-ml" evalContext="ranking" />
+		<experiment id="xing4" models="mlbprfm4" splits="xing-all-ml" evalContext="ranking" />
+		
 
 		<experiment id="ml100k1" models="bmf,mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 		<experiment id="ml100k4" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 		<experiment id="ml100k5" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
+		<experiment id="ml100k7" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 
 		<experiment id="ml100k-test" models="mf,bmf" splits="ml100k-test" evalContext="rating-ranking" />
 
@@ -222,6 +249,7 @@
 
 		<experiment id="join" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="kollekt.joint21.csv,kollekt22.csv" outputFile="kollekt.joint22.csv" />
 		<experiment id="join2" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="ml100k.join1.csv,ml100k5.csv" outputFile="ml100k.joint3.csv" />
+		<experiment id="join-round1" type="other" class="WrapRec.Utils.JoinResults" sourceFiles="recsys1.csv,recsys7.csv,recsys15.csv,recsys4.csv,recsys70.csv,recsys44.csv,recsys61.csv,recsys11.csv,recsys72.csv,recsys66.csv,recsys132.csv,recsys65.csv,recsys24.csv,recsys133.csv,recsys23.csv,recsys25.csv,recsys120.csv,recsys83.csv,recsys43.csv,recsys125.csv,recsys5.csv,recsys122.csv,recsys119.csv,recsys54.csv,recsys41.csv,recsys77.csv,recsys131.csv,recsys6.csv,recsys18.csv,recsys22.csv,recsys79.csv,recsys56.csv,recsys76.csv,recsys34.csv,recsys91.csv,recsys68.csv,recsys106.csv,recsys35.csv,recsys124.csv,recsys129.csv,recsys96.csv,recsys69.csv,recsys87.csv,recsys94.csv,recsys82.csv,recsys42.csv,recsys102.csv,recsys52.csv,recsys17.csv,recsys118.csv,recsys88.csv,recsys117.csv,recsys121.csv,recsys49.csv,recsys98.csv,recsys48.csv,recsys60.csv,recsys109.csv,recsys99.csv,recsys53.csv,recsys46.csv,recsys130.csv,recsys100.csv,recsys81.csv,recsys51.csv,recsys104.csv,recsys40.csv,recsys114.csv,recsys14.csv,recsys95.csv,recsys110.csv,recsys115.csv,recsys39.csv,recsys63.csv,recsys71.csv,recsys126.csv,recsys123.csv,recsys67.csv,recsys20.csv,recsys19.csv,recsys32.csv,recsys113.csv,recsys16.csv,recsys55.csv,recsys84.csv,recsys64.csv,recsys103.csv,recsys9.csv,recsys97.csv,recsys50.csv,recsys57.csv,recsys38.csv,recsys89.csv,recsys134.csv,recsys62.csv,recsys128.csv,recsys27.csv,recsys26.csv,recsys112.csv,recsys107.csv,recsys8.csv,recsys78.csv,recsys31.csv,recsys90.csv,recsys75.csv,recsys12.csv,recsys135.csv,recsys105.csv,recsys86.csv,recsys92.csv,recsys58.csv,recsys101.csv,recsys37.csv,recsys74.csv,recsys111.csv,recsys80.csv,recsys36.csv,recsys2.csv,recsys28.csv,recsys13.csv,recsys33.csv,recsys73.csv,recsys116.csv,recsys59.csv,recsys127.csv,recsys3.csv,recsys45.csv,recsys85.csv,recsys10.csv,recsys93.csv,recsys108.csv,recsys47.csv,recsys29.csv,recsys30.csv,recsys21.csv" outputFile="round1.csv" />
 		<experiment id="split" type="other" class="WrapRec.Utils.FileSplitter" sourceReader="30m-lov-ml" part1Reader="30m-lov-train-ml" part2Reader="30m-lov-test-ml" part1Ratio="0.75" />
 	</experiments>
 </wraprec>

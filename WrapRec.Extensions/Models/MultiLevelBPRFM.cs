@@ -7,6 +7,7 @@ using WrapRec.Core;
 using MathNet.Numerics.Distributions;
 using LinqLib.Sequence;
 using LinqLib.Operators;
+using WrapRec.Utils;
 
 namespace WrapRec.Extensions.Models
 {
@@ -18,14 +19,7 @@ namespace WrapRec.Extensions.Models
 		UniformFeedback
 	}
 	
-	public enum NegSampler
-    {
-        CombinedSampling,
-        OnlyObserved,
-        OnlyUnobserved
-    }
-
-	public enum UnobservedSamplingMethod
+	public enum UnobservedNegSampler
 	{ 
 		UniformFeedback,
 		UniformItem,
@@ -39,6 +33,7 @@ namespace WrapRec.Extensions.Models
         public Dictionary<string, List<Feedback>> UserNegFeedback { get; private set; }
 		public Dictionary<int, List<Feedback>> LevelPosFeedback { get; set; }
 		public Dictionary<string, List<int>> UserFeedbackLevels { get; private set; }
+		public MultiKeyDictionary<string, int, List<Feedback>> UserLevelFeedback { get; private set; }
 		public List<Feedback> TrainFeedback { get; private set; }
 		public List<string> AllItems { get; private set; }
         public List<Feedback> AllPosFeedback { get; set; }
@@ -47,15 +42,17 @@ namespace WrapRec.Extensions.Models
         public int NumObservedNeg { get; set; }
         public int NumUnobservedNeg { get; set; }
 		public PosSampler PosSampler { get; set; }
-		public NegSampler NegSampler { get; set;}
-		public UnobservedSamplingMethod UnobservedSamplingMethod { get; set; }
+		public UnobservedNegSampler UnobservedSamplingMethod { get; set; }
 		public float Lambda { get; set; }
 		public float LambdaLevel { get; set; }
-		
+		public float UnobservedRatio { get; set; }
+
 		Categorical _rankSampler;
 		Dictionary<int, List<string>> _factorBasedRank;
+		Dictionary<int, int> _levelIndex;
 		float[] _itemFactorsStdev;
-		Categorical _levelSampler;
+		Categorical _posLevelSampler;
+		Categorical _unobservedOrNegativeSampler;
 
 		public MultiLevelBPRFM()
 			: base()
@@ -95,10 +92,14 @@ namespace WrapRec.Extensions.Models
 				for (int i = 0; i < PosLevels.Count; i++)
 					levelPro[i] = 1.0f * PosLevels[i] * LevelPosFeedback[PosLevels[i]].Count / sum;
 				
-				_levelSampler = new Categorical(levelPro);
+				_posLevelSampler = new Categorical(levelPro);
 			}
-		}
 
+			// this sampler specifies whether the negative sample should be sampled from observed or unobserved feedback
+			// the parameter of this distributio is parameter beta in Loni_RecSys2016
+			// with beta=1 always unobserved will be sampled but with beta = 0 always observed will be sampled (if possible)
+			_unobservedOrNegativeSampler = new Categorical(new double[] { (1 - UnobservedRatio), UnobservedRatio });
+		}
 
 		protected virtual void CacheSplitData()
 		{
@@ -112,6 +113,7 @@ namespace WrapRec.Extensions.Models
 			UserPosFeedback = new Dictionary<string, List<Feedback>>();
 			UserNegFeedback = new Dictionary<string, List<Feedback>>();
 			UserFeedbackLevels = new Dictionary<string, List<int>>();
+			UserLevelFeedback = new MultiKeyDictionary<string, int, List<Core.Feedback>>();
 			AllPosFeedback = new List<Feedback>();
 			AllItems = Split.Train.Select(f => f.Item.Id).Distinct().ToList();
 
@@ -125,7 +127,7 @@ namespace WrapRec.Extensions.Models
 				UserPosFeedback[userId] = new List<Feedback>();
 				UserNegFeedback[userId] = new List<Feedback>();
 				UserFeedbackLevels[userId] = g.Select(f => f.Level).Distinct().OrderByDescending(l => l).ToList();
-
+				
 				float ratingAvg = -1f;
 				if (g.First() is Rating)
 					ratingAvg = g.Average(f => ((Rating)f).Value);
@@ -134,13 +136,18 @@ namespace WrapRec.Extensions.Models
 				{
 					UserFeedback[f.User.Id].Add(f);
 
+					if (!UserLevelFeedback.ContainsKey(f.User.Id, f.Level))
+						UserLevelFeedback.Add(f.User.Id,f.Level, new List<Feedback>());
+
+					UserLevelFeedback[f.User.Id][f.Level].Add(f);
+
 					// determine whether the feedback is positive, negative or rating and add that to the right list
 					switch (f.FeedbackType)
 					{
 						case FeedbackType.Positive:
 							UserPosFeedback[f.User.Id].Add(f);
 							AllPosFeedback.Add(f);
-
+							
 							if (!LevelPosFeedback.ContainsKey(f.Level))
 							{
 								LevelPosFeedback[f.Level] = new List<Feedback>();
@@ -172,6 +179,12 @@ namespace WrapRec.Extensions.Models
 				}
 			}
 			
+			PosLevels = PosLevels.OrderByDescending(l => l).ToList();
+			_levelIndex = new Dictionary<int, int>();
+
+			for (int i = 0; i < PosLevels.Count; i++)
+				_levelIndex.Add(PosLevels[i], i);
+
 			Logger.Current.Info("Number of feedbacks:");
 			LevelPosFeedback.Select(kv => new { Level = kv.Key, Count = kv.Value.Count })
 				.OrderByDescending(l => l.Level)
@@ -194,7 +207,7 @@ namespace WrapRec.Extensions.Models
 					int index = random.Next(LevelPosFeedback[level].Count);
 					return LevelPosFeedback[level][index];
 				case PosSampler.DynamicLevel:
-					int l = PosLevels[_levelSampler.Sample()];
+					int l = PosLevels[_posLevelSampler.Sample()];
 					int i = random.Next(LevelPosFeedback[l].Count);
 					return LevelPosFeedback[l][i];
 				case PosSampler.UniformFeedback:
@@ -202,32 +215,8 @@ namespace WrapRec.Extensions.Models
 				default:
 					return null;
 			}
-			
         }
 
-		protected virtual Feedback SampleObservedNegFeedback(Feedback posFeedback)
-		{
-			return SampleObservedNegFeedback(posFeedback, -1);
-		}
-
-        protected virtual Feedback SampleObservedNegFeedback(Feedback posFeedback, int sampleLevel = -1)
-        {
-			if (sampleLevel == -1)
-			{
-				var toSampleLevels = GetNegSampleLevels(posFeedback);
-				
-				// in case of no observed negative feedback, sampler fallbacks to unobserved feedback
-				if (toSampleLevels.Count == 0)
-					return SampleUnobservedNegFeedback(posFeedback);
-
-				sampleLevel = toSampleLevels[random.Next(toSampleLevels.Count)];
-			}
-
-			NumObservedNeg++;
-			var toSample = UserPosFeedback[posFeedback.User.Id].Concat(UserNegFeedback[posFeedback.User.Id])
-				.Where(f => f.Level == sampleLevel).ToList();
-			return toSample[random.Next(toSample.Count)];
-        }
 
 		public virtual Feedback SampleUnobservedNegFeedback(Feedback posFeedback)
 		{
@@ -235,13 +224,13 @@ namespace WrapRec.Extensions.Models
 			
 			switch (UnobservedSamplingMethod)
 			{
-				case UnobservedSamplingMethod.UniformFeedback:
+				case UnobservedNegSampler.UniformFeedback:
 					do
 					{
 						neg = TrainFeedback[random.Next(TrainFeedback.Count)];
 					} while (neg.User == posFeedback.User);
 					break;
-				case UnobservedSamplingMethod.UniformItem:
+				case UnobservedNegSampler.UniformItem:
 					string itemId;
 					do
 					{
@@ -249,7 +238,7 @@ namespace WrapRec.Extensions.Models
 					} while (UserFeedback[posFeedback.User.Id].Select(f => f.Item.Id).Contains(itemId));
 					neg = new Feedback(posFeedback.User, Split.Container.Items[itemId]);
 					break;
-				case UnobservedSamplingMethod.Dynamic:
+				case UnobservedNegSampler.Dynamic:
 					string negItemId;
 					do
 					{
@@ -267,14 +256,66 @@ namespace WrapRec.Extensions.Models
 
 		protected virtual Feedback SampleNegFeedback(Feedback posFeedback)
 		{
-			var toSampleLevels = GetNegSampleLevels(posFeedback);
-			int sampleLevelIndex = random.Next(toSampleLevels.Count + 1);
+			int observedOrUnobserved = _unobservedOrNegativeSampler.Sample();
+			if (observedOrUnobserved == 1)
+				return SampleUnobservedNegFeedback(posFeedback);
 
-			// in case the index overflows the list of levels or there is no sample levels (both values below are 0), sample unobserved
-			if (sampleLevelIndex == toSampleLevels.Count)
+			var toSampleLevels = GetNegSampleLevels(posFeedback);
+			// not possible to sample observed
+			if (toSampleLevels.Count == 0)
 				return SampleUnobservedNegFeedback(posFeedback);
 			
-			return SampleObservedNegFeedback(posFeedback, toSampleLevels[sampleLevelIndex]);
+			// sample observed
+			// here both levels and item are sampled uniformly with respect to the frequency of items in a level
+			var cdf = new List<int>();
+			cdf.Add(0);
+
+			for (int i = 0; i < toSampleLevels.Count; i++)
+				cdf.Add(cdf[i] + UserLevelFeedback[posFeedback.User.Id][toSampleLevels[i]].Count);
+
+			int sampleIndex = random.Next(cdf.Last());
+
+			int levelIndex = -1, sampleOffset = -1;
+			for (int i = 1; i < cdf.Count; i++)
+			{
+				if (sampleIndex < cdf[i])
+				{
+					sampleOffset = sampleIndex - cdf[i - 1];
+					levelIndex = i - 1;
+					break;
+				}
+			}
+
+			NumObservedNeg++;
+			return UserLevelFeedback[posFeedback.User.Id][toSampleLevels[levelIndex]][sampleOffset];
+		}
+
+		/// <summary>
+		/// sample negative level non-uniforly with respect to the frequency items in the level and importance of level
+		/// </summary>
+		/// <param name="allowedLevels">The levels that user has items in</param>
+		/// <returns></returns>
+		protected virtual int SampleNegativeLevel(List<int> allowedLevels)
+		{
+			int sum = 0;
+			foreach (int level in allowedLevels)
+			{
+				sum += LevelPosFeedback[level].Count * level;
+			}
+
+			double[] probs = new double[allowedLevels.Count + 1];
+			for (int i = 0; i < allowedLevels.Count; i++)
+			{
+				probs[i] = (1 - UnobservedRatio) * allowedLevels[i] * LevelPosFeedback[allowedLevels[i]].Count / sum;
+			}
+			probs[allowedLevels.Count] = UnobservedRatio;
+
+			int levelIndex = new Categorical(probs).Sample();
+
+			if (levelIndex == allowedLevels.Count)
+				return 0;
+
+			return allowedLevels[levelIndex];
 		}
 
 		protected virtual List<int> GetNegSampleLevels(Feedback posFeedback)
@@ -287,28 +328,13 @@ namespace WrapRec.Extensions.Models
 		// this method ingores the property of the baseClass: WithReplacement
 		public override void Iterate()
 		{
-			Func<Feedback, Feedback> negSampler = SampleNegFeedback;
-
-			switch (NegSampler)
-			{
-				case NegSampler.CombinedSampling:
-					negSampler = SampleNegFeedback;
-					break;
-				case NegSampler.OnlyObserved:
-					negSampler = SampleObservedNegFeedback;
-					break;
-				case NegSampler.OnlyUnobserved:
-					negSampler = SampleUnobservedNegFeedback;
-					break;
-			}
-
 			for (int i = 0; i < Feedback.Count; i++)
 			{
-				if (UnobservedSamplingMethod == UnobservedSamplingMethod.Dynamic && i % (AllItems.Count * Math.Log(AllItems.Count)) == 0)
+				if (UnobservedSamplingMethod == UnobservedNegSampler.Dynamic && i % (AllItems.Count * Math.Log(AllItems.Count)) == 0)
 					UpdateDynamicSampler();
 				
 				var pos = SamplePosFeedback();
-				var neg = negSampler(pos);
+				var neg = SampleNegFeedback(pos);
 
 				int user_id = UsersMap.ToInternalID(pos.User.Id);
 				int item_id = ItemsMap.ToInternalID(pos.Item.Id);
@@ -372,7 +398,7 @@ namespace WrapRec.Extensions.Models
             for (int i = 0; i < NumIter; i++)
                 Iterate();
 
-            Logger.Current.Info("Num unobserved negative samples: {0}, observed negative samples: {1}", 
+            Logger.Current.Info("Num Observed negative samples: {0}, Unobserved negative samples: {1}", 
 				NumObservedNeg, NumUnobservedNeg);
 		}
 
