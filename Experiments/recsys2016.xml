@@ -19,24 +19,9 @@
 			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.BPRFM" NumFactors="10" NumIter="50" WithReplacement="false,true" UniformUserSampling="false,true" />
 		</model>
 		<model id="mlbprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
-			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="50" NumIter="100"
-				PosSampler="DynamicLevel" NegSampler="CombinedSampling" UnobservedRatio="1"
-				UnobservedSamplingMethod="UniformFeedback" NumObservedNeg="" NumUnobservedNeg="" />
-		</model>
-		<model id="mlbprfm2" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
-			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="20" NumIter="50"
-				PosSampler="UniformFeedback" NegSampler="OnlyUnobserved" UnobservedRatio="1"
-				UnobservedSamplingMethod="UniformItem,UniformFeedback" NumObservedNeg="" NumUnobservedNeg="" />
-		</model>
-		<model id="mlbprfm3" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
-			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="20" NumIter="50"
-				PosSampler="DynamicLevel" NegSampler="CombinedSampling" UnobservedRatio="0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1"
-				UnobservedSamplingMethod="Dynamic" NumObservedNeg="" NumUnobservedNeg="" />
-		</model>
-		<model id="mlbprfm4" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
-			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="20" NumIter="50"
-				PosSampler="DynamicLevel" NegSampler="CombinedSampling" UnobservedRatio="0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1"
-				UnobservedSamplingMethod="UniformItem" NumObservedNeg="" NumUnobservedNeg="" />
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="10" NumIter="50"
+				PosSampler="DynamicLevel" UnobservedRatio="0.1,0.5,1"
+				UnobservedNegSampler="UniformFeedback" NumObservedNeg="" NumUnobservedNeg="" />
 		</model>
 		<model id="uknn" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.UserKNN" K="40,80"/>
@@ -166,7 +151,7 @@
 	<splits>
 		<split id="ml100k-ml" type="dynamic" dataContainer="ml100k-ml" trainRatios="0.75" />
 		<split id="ml1m-ml" type="dynamic" dataContainer="ml1m-ml" trainRatios="0.75" />
-		<split id="ml100k-test" type="crossvalidation" dataContainer="ml100k-ml" numFolds="4" />
+		<split id="ml100k-test" type="dynamic" dataContainer="ml100k-ml" trainRatios="0.75" />
 
 		<split id="xing-all-ml" type="dynamic" dataContainer="xing-all-ml" trainRatios="0.75" />
 		<split id="30m-all-ml" type="dynamic" dataContainer="30m-all-ml" trainRatios="0.75" />
@@ -209,7 +194,7 @@
 		</evalContext>
 	</evalContexts>
 	
-	<experiments run="split" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
+	<experiments run="ml100k-test" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
 		<experiment id="kollekt1" models="libfm" splits="kollekt-fav" evalContext="ranking" />
 		<experiment id="kollekt2" models="libfm" splits="kollekt-fol" evalContext="ranking" />
 		<experiment id="kollekt3" models="mp,bprmf,uknn,libfm" splits="kollekt-lis" evalContext="ranking" />
@@ -243,7 +228,7 @@
 		<experiment id="ml100k5" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 		<experiment id="ml100k7" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 
-		<experiment id="ml100k-test" models="mf,bmf" splits="ml100k-test" evalContext="rating-ranking" />
+		<experiment id="ml100k-test" models="mlbprfm" splits="ml100k-test" evalContext="rating-ranking" />
 
 		<experiment id="ml1m1" models="mlbprfm" splits="ml1m-ml" evalContext="rating-ranking" />
 

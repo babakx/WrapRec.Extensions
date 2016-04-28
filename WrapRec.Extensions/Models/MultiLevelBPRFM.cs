@@ -42,7 +42,7 @@ namespace WrapRec.Extensions.Models
         public int NumObservedNeg { get; set; }
         public int NumUnobservedNeg { get; set; }
 		public PosSampler PosSampler { get; set; }
-		public UnobservedNegSampler UnobservedSamplingMethod { get; set; }
+		public UnobservedNegSampler UnobservedNegSampler { get; set; }
 		public float Lambda { get; set; }
 		public float LambdaLevel { get; set; }
 		public float UnobservedRatio { get; set; }
@@ -222,7 +222,7 @@ namespace WrapRec.Extensions.Models
 		{
 			Feedback neg = null;
 			
-			switch (UnobservedSamplingMethod)
+			switch (UnobservedNegSampler)
 			{
 				case UnobservedNegSampler.UniformFeedback:
 					do
@@ -325,12 +325,12 @@ namespace WrapRec.Extensions.Models
 				.ToList();
 		}
 
-		// this method ingores the property of the baseClass: WithReplacement
+		// this method ingores the properties of the baseClass: WithReplacement and UniformUserSampling
 		public override void Iterate()
 		{
 			for (int i = 0; i < Feedback.Count; i++)
 			{
-				if (UnobservedSamplingMethod == UnobservedNegSampler.Dynamic && i % (AllItems.Count * Math.Log(AllItems.Count)) == 0)
+				if (UnobservedNegSampler == UnobservedNegSampler.Dynamic && i % (AllItems.Count * Math.Log(AllItems.Count)) == 0)
 					UpdateDynamicSampler();
 				
 				var pos = SamplePosFeedback();
@@ -395,10 +395,13 @@ namespace WrapRec.Extensions.Models
 	
 			Logger.Current.Info("Training with MultiLevel BPR...");
 			random = MyMediaLite.Random.GetInstance();
-            for (int i = 0; i < NumIter; i++)
-                Iterate();
-
-            Logger.Current.Info("Num Observed negative samples: {0}, Unobserved negative samples: {1}", 
+			for (int i = 0; i < NumIter; i++)
+			{
+				Iterate();
+				float perc = ((float)(i + 1) / NumIter) * 100;
+				Console.Write("\r{0:0}%   ", perc);
+			}
+            Logger.Current.Info("\nNum Observed negative samples: {0}, Unobserved negative samples: {1}", 
 				NumObservedNeg, NumUnobservedNeg);
 		}
 
