@@ -54,11 +54,19 @@ namespace WrapRec.Extensions.Models
 		Categorical _posLevelSampler;
 		Categorical _unobservedOrNegativeSampler;
 
+		static List<int> _allThreadIds = new List<int>();
+		int _thisThreadId;
+
 		public MultiLevelBPRFM()
 			: base()
 		{
 			Lambda = 500f;
 			LambdaLevel = 10f;
+
+			_thisThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
+
+			if (!_allThreadIds.Contains(_thisThreadId))
+				_allThreadIds.Add(_thisThreadId);
 		}
 
         protected override void InitModel()
@@ -398,12 +406,18 @@ namespace WrapRec.Extensions.Models
 			for (int i = 0; i < NumIter; i++)
 			{
 				Iterate();
-				float perc = ((float)(i + 1) / NumIter) * 100;
-				Console.Write("\r{0:0}%   ", perc);
+				Console.Write(".");
 			}
             Logger.Current.Info("\nNum Observed negative samples: {0}, Unobserved negative samples: {1}", 
 				NumObservedNeg, NumUnobservedNeg);
 		}
 
+		private void WriteProgress(int iterNum)
+		{
+			float perc = ((float)iterNum / NumIter) * 100;
+			int offset = _allThreadIds.IndexOf(_thisThreadId);
+			Console.SetCursorPosition(offset * 7, Console.CursorTop);
+			Console.Write("{0:0}%    ", perc);
+		}
 	}
 }
