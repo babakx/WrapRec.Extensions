@@ -51,8 +51,9 @@ namespace WrapRec.Extensions.Models
 		Dictionary<int, List<string>> _factorBasedRank;
 		Dictionary<int, int> _levelIndex;
 		float[] _itemFactorsStdev;
-		Categorical _posLevelSampler;
-		Categorical _unobservedOrNegativeSampler;
+		
+		protected Categorical _posLevelSampler;
+		protected Categorical _unobservedOrNegativeSampler;
 
 		static List<int> _allThreadIds = new List<int>();
 		int _thisThreadId;

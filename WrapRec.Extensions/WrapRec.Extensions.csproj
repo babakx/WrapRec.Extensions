@@ -83,6 +83,7 @@
     <Compile Include="Models\BPRFM.cs" />
     <Compile Include="Models\MmlBprfmRecommender.cs" />
     <Compile Include="Models\MultiLevelBPRFM.cs" />
+    <Compile Include="Models\TimeBasedMultiLevelBPRFM.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -21,8 +21,13 @@
 		<model id="mlbprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
 			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MultiLevelBPRFM" NumFactors="10" NumIter="50"
 				PosSampler="DynamicLevel" UnobservedRatio="0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1"
-				UnobservedNegSampler="UniformFeedback" NumObservedNeg="" NumUnobservedNeg="" />
+				UnobservedNegSampler="UniformItem" NumObservedNeg="" NumUnobservedNeg="" />
 		</model>
+		<model id="tbmlbprfm" class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.MmlBprfmRecommender">
+			<parameters ml-class="WrapRec.Extensions.dll:WrapRec.Extensions.Models.TimeBasedMultiLevelBPRFM" NumFactors="10" NumIter="50"
+				PosSampler="DynamicLevel" UnobservedRatio="0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1"
+				UnobservedNegSampler="UniformItem" NumObservedNeg="" NumUnobservedNeg="" />
+		</model>	
 		<model id="uknn" class="WrapRec.Models.MmlRecommender">
 			<parameters ml-class="MyMediaLite.dll:MyMediaLite.ItemRecommendation.UserKNN" K="40,80"/>
 		</model>
@@ -36,7 +41,7 @@
 		<dataReaders>
 			<!-- MovieLens -->
 			<reader id="ml100k-ml" path="D:\Dropbox\Datasets\MovieLens\ml-100k\u.data" sliceType="other" dataType="ratings"
-				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.RatingAsMultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,rating,timestamp:n" delimiter="\t" />
+				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.RatingAsMultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,rating,timestamp" delimiter="\t" />
 
 			<reader id="ml1m-ml" path="D:\Dropbox\Datasets\MovieLens\ml-1m\ratings.dat" sliceType="other" dataType="ratings"
 				class="WrapRec.Extensions.dll:WrapRec.Extensions.IO.RatingAsMultiLevelFeedbackCsvReader" hasHeader="false" header="userId,itemId,rating,timestamp:n" delimiter="::" />
@@ -171,7 +176,7 @@
 		<split id="kollekt-fav-s-attr" type="static" dataContainer="kollekt-fav-s-attr" />
 		<split id="kollekt-lis-s-attr" type="static" dataContainer="kollekt-lis-s-attr" />
 
-		<split id="kollekt-all-ml" type="static" dataContainer="kollekt-all-ml" parallelModels="true" />
+		<split id="kollekt-all-ml" type="static" dataContainer="kollekt-all-ml" />
 		<split id="kollekt-fol-lis-ml" type="static" dataContainer="kollekt-fol-lis-ml"/>
 	</splits>
 	
@@ -194,7 +199,7 @@
 		</evalContext>
 	</evalContexts>
 	
-	<experiments run="ml100k-test" parallel="false" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="info">
+	<experiments run="ml100k11" parallel="true" resultsFolder="D:\Dropbox\Datasets\Wraprec Results" subFolder="false" separator="\t" verbosity="warn">
 		<experiment id="kollekt1" models="libfm" splits="kollekt-fav" evalContext="ranking" />
 		<experiment id="kollekt2" models="libfm" splits="kollekt-fol" evalContext="ranking" />
 		<experiment id="kollekt3" models="mp,bprmf,uknn,libfm" splits="kollekt-lis" evalContext="ranking" />
@@ -227,6 +232,7 @@
 		<experiment id="ml100k4" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 		<experiment id="ml100k5" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 		<experiment id="ml100k7" models="mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
+		<experiment id="ml100k11" models="tbmlbprfm,mlbprfm" splits="ml100k-ml" evalContext="rating-ranking" />
 
 		<experiment id="kollekt-test" models="mlbprfm" splits="kollekt-all-ml" evalContext="ranking" />
 		<experiment id="ml100k-test" models="mlbprfm" splits="ml100k-test" evalContext="rating-ranking" />
