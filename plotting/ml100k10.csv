@@ -1,0 +1,13 @@
+ExpeimentId	ModelId	SplitId	ContainerId	AllowDuplicates	ml-class	NumFactors	NumIter	PosSampler	UnobservedRatio	UnobservedNegSampler	NumObservedNeg	NumUnobservedNeg	TrainTime	EvaluationTime	PureTrainTime	PureEvaluationTime	TotalTime	PureTotalTime	TestedCases	CandidatesMode	NumCandidates	CutOff	Recall	MRR	NDCG	EvalMethod
+ml100k10	mlbprfm	ml100k-ml-0.75	ml100k-ml	False	MultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	97384	655	96840	652	98039	97492	13634	TRAINING	100	5	0.3866	0.2375	0.2742	RBR-OPR
+ml100k10	mlbprfm	ml100k-ml-0.75	ml100k-ml	False	MultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	97384	655	96840	652	98039	97492	13634	TRAINING	100	10	0.5290	0.2566	0.3202	RBR-OPR
+ml100k10	mlbprfm	ml100k-ml-0.75	ml100k-ml	False	MultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	97384	655	96840	652	98039	97492	13634	TRAINING	100	20	0.6957	0.2680	0.3620	RBR-OPR
+ml100k10	mlbprfm	ml100k-ml-0.75	ml100k-ml	False	MultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	97384	655	96840	652	98039	97492	13634	TRAINING	1000	5	0.1972	0.1174	0.1370	RBR-OPR
+ml100k10	mlbprfm	ml100k-ml-0.75	ml100k-ml	False	MultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	97384	655	96840	652	98039	97492	13634	TRAINING	1000	10	0.2824	0.1286	0.1645	RBR-OPR
+ml100k10	mlbprfm	ml100k-ml-0.75	ml100k-ml	False	MultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	97384	655	96840	652	98039	97492	13634	TRAINING	1000	20	0.3892	0.1359	0.1910	RBR-OPR
+ml100k10	tbmlbprfm	ml100k-ml-0.75	ml100k-ml	False	TimeBasedMultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	98246	441	97702	441	98687	98143	13634	TRAINING	100	5	0.3861	0.2373	0.2738	RBR-OPR
+ml100k10	tbmlbprfm	ml100k-ml-0.75	ml100k-ml	False	TimeBasedMultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	98246	441	97702	441	98687	98143	13634	TRAINING	100	10	0.5282	0.2564	0.3199	RBR-OPR
+ml100k10	tbmlbprfm	ml100k-ml-0.75	ml100k-ml	False	TimeBasedMultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	98246	441	97702	441	98687	98143	13634	TRAINING	100	20	0.6934	0.2677	0.3612	RBR-OPR
+ml100k10	tbmlbprfm	ml100k-ml-0.75	ml100k-ml	False	TimeBasedMultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	98246	441	97702	441	98687	98143	13634	TRAINING	1000	5	0.1970	0.1173	0.1365	RBR-OPR
+ml100k10	tbmlbprfm	ml100k-ml-0.75	ml100k-ml	False	TimeBasedMultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	98246	441	97702	441	98687	98143	13634	TRAINING	1000	10	0.2819	0.1284	0.1641	RBR-OPR
+ml100k10	tbmlbprfm	ml100k-ml-0.75	ml100k-ml	False	TimeBasedMultiLevelBPRFM	10	50	UniformFeedback	1	UniformItem	0	3750000	98246	441	97702	441	98687	98143	13634	TRAINING	1000	20	0.3888	0.1357	0.1908	RBR-OPR
