@@ -16,15 +16,9 @@ namespace WrapRec.Extensions.Models
 		protected override void InitModel()
 		{
 			base.InitModel();
-
-			// workaround to be able to sort based on timestamp
-			foreach (Feedback f in Split.Train)
-			{
-				f.SetupAttributeDic();
-			}
 			
 			UserTimeSortedFeedback = UserFeedback.ToDictionary(kv => kv.Key,
-				kv => kv.Value.OrderByDescending(f => f.Attribute["timestamp"].Value).ToList());
+				kv => kv.Value.OrderByDescending(f => f.Attributes["timestamp"].Value).ToList());
 
 			_indexInSortedFeedback = new Dictionary<Feedback, int>();
 
