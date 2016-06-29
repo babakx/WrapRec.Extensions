@@ -7,6 +7,7 @@ using WrapRec.Core;
 using MathNet.Numerics.Distributions;
 using LinqLib.Sequence;
 using LinqLib.Operators;
+using MyMediaLite.DataType;
 using WrapRec.Utils;
 
 namespace WrapRec.Extensions.Models
@@ -16,7 +17,9 @@ namespace WrapRec.Extensions.Models
 		UniformUser,
 		UniformLevel,
 		DynamicLevel,
-		UniformFeedback
+        AdaptedWeight,
+		UniformFeedback,
+        LeastPopular
 	}
 	
 	public enum UnobservedNegSampler
@@ -46,6 +49,7 @@ namespace WrapRec.Extensions.Models
 		public float Lambda { get; set; }
 		public float LambdaLevel { get; set; }
 		public float UnobservedRatio { get; set; }
+        public Dictionary<string, int> SampledCount { get; private set; }
 
 		Categorical _rankSampler;
 		Dictionary<int, List<string>> _factorBasedRank;
@@ -91,23 +95,24 @@ namespace WrapRec.Extensions.Models
 			_rankSampler = new Categorical(rankingPro);
 			_itemFactorsStdev = new float[NumFactors];
 
-			// initialize dynamic level sampler
-			if (PosSampler == PosSampler.DynamicLevel)
+            double[] levelPro = new double[PosLevels.Count];
+
+            // initialize dynamic level sampler
+            if (PosSampler == PosSampler.DynamicLevel || PosSampler == PosSampler.AdaptedWeight)
 			{
 				// key is levelNo, value id list of feedback in that level
 				sum = LevelPosFeedback.Sum(kv => kv.Key * kv.Value.Count);
-				double[] levelPro = new double[PosLevels.Count];
-
+				
 				for (int i = 0; i < PosLevels.Count; i++)
 					levelPro[i] = 1.0f * PosLevels[i] * LevelPosFeedback[PosLevels[i]].Count / sum;
 				
 				_posLevelSampler = new Categorical(levelPro);
 			}
 
-			// this sampler specifies whether the negative sample should be sampled from observed or unobserved feedback
-			// the parameter of this distributio is parameter beta in Loni_RecSys2016
-			// with beta=1 always unobserved will be sampled but with beta = 0 always observed will be sampled (if possible)
-			_unobservedOrNegativeSampler = new Categorical(new double[] { (1 - UnobservedRatio), UnobservedRatio });
+            // this sampler specifies whether the negative sample should be sampled from observed or unobserved feedback
+            // the parameter of this distributio is parameter beta in Loni_RecSys2016
+            // with beta=1 always unobserved will be sampled but with beta = 0 always observed will be sampled (if possible)
+            _unobservedOrNegativeSampler = new Categorical(new double[] { (1 - UnobservedRatio), UnobservedRatio });
 		}
 
 		protected virtual void CacheSplitData()
@@ -125,9 +130,11 @@ namespace WrapRec.Extensions.Models
 			UserLevelFeedback = new MultiKeyDictionary<string, int, List<Core.Feedback>>();
 			AllPosFeedback = new List<Feedback>();
 			AllItems = Split.Train.Select(f => f.Item.Id).Distinct().ToList();
+            SampledCount = AllItems.ToDictionary(i => i, i => 1);
 
-			LevelPosFeedback = new Dictionary<int, List<Feedback>>();
+            LevelPosFeedback = new Dictionary<int, List<Feedback>>();
 
+            
 			var usersFeedback = Split.Train.GroupBy(f => f.User);
 			foreach (var g in usersFeedback)
 			{
@@ -216,18 +223,38 @@ namespace WrapRec.Extensions.Models
 					int index = random.Next(LevelPosFeedback[level].Count);
 					return LevelPosFeedback[level][index];
 				case PosSampler.DynamicLevel:
+                case PosSampler.AdaptedWeight:
 					int l = PosLevels[_posLevelSampler.Sample()];
 					int i = random.Next(LevelPosFeedback[l].Count);
 					return LevelPosFeedback[l][i];
 				case PosSampler.UniformFeedback:
 					return AllPosFeedback[random.Next(AllPosFeedback.Count)];
+                case PosSampler.LeastPopular:
+			        return SampleLeastPopularPosFeedback();
 				default:
 					return null;
 			}
         }
 
+        public virtual Feedback SampleLeastPopularPosFeedback()
+        {
+            int user_id = SampleUser();
 
-		public virtual Feedback SampleUnobservedNegFeedback(Feedback posFeedback)
+            var user = Split.Container.Users[UsersMap.ToOriginalID(user_id)];
+
+            var userFeedback = user.Feedbacks.Where(f => f.SliceType == FeedbackSlice.TRAIN).ToList();
+            double[] itemProbs = userFeedback.Select(f => 1.0/Math.Log(SampledCount[f.Item.Id] + 1, 2)).ToArray();
+
+            var fIx = new Categorical(itemProbs).Sample();
+
+            Feedback posFeedback = userFeedback[fIx];
+            SampledCount[posFeedback.Item.Id]++;
+
+            return posFeedback;
+        }
+
+
+        public virtual Feedback SampleUnobservedNegFeedback(Feedback posFeedback)
 		{
 			Feedback neg = null;
 			
@@ -351,6 +378,9 @@ namespace WrapRec.Extensions.Models
 
 				UpdateFactors(user_id, item_id, other_item_id, true, true, update_j);
 			}
+
+            if (PosSampler == PosSampler.AdaptedWeight)
+                UpdatePosSampler();
 		}
 
 		protected virtual void UpdateDynamicSampler()
@@ -362,8 +392,45 @@ namespace WrapRec.Extensions.Models
 			}
 		}
 
-		
-		protected virtual string SampleNegItemDynamic(Feedback posFeedback)
+        protected virtual void UpdatePosSampler()
+        {
+            double[] levelsAvg = new double[PosLevels.Count];
+            for (int i = 0; i < PosLevels.Count; i++)
+            {
+                foreach (Feedback f in LevelPosFeedback[PosLevels[i]])
+                {
+                    int user_id = UsersMap.ToInternalID(f.User.Id);
+                    int item_id = ItemsMap.ToInternalID(f.Item.Id);
+
+                    levelsAvg[i] += MatrixExtensions.RowScalarProduct(user_factors, user_id, item_factors, item_id);
+                }
+                //Console.WriteLine(levelsAvg[i]);
+                levelsAvg[i] /= LevelPosFeedback[PosLevels[i]].Count;
+            }
+
+            double avgSum = levelsAvg.Sum();
+            double[] levelWeights = new double[PosLevels.Count];
+
+            for (int i = 0; i < PosLevels.Count; i++)
+                levelWeights[i] = levelsAvg[i]/avgSum;
+
+            double sum = 0;
+            for (int i = 0; i < PosLevels.Count; i++)
+                sum += levelWeights[i]*LevelPosFeedback[PosLevels[i]].Count;
+
+            double[] levelPros = new double[PosLevels.Count];
+            for (int i = 0; i < PosLevels.Count; i++)
+                levelPros[i] = levelWeights[i] * LevelPosFeedback[PosLevels[i]].Count / sum;
+
+            string weights = levelWeights.Select(p => string.Format("{0:0.00}", p)).Aggregate((a, b) => a + " " + b);
+            Logger.Current.Info(weights);
+            //var temp = SampledCount.Values.Take(10).Select(i => i.ToString()).Aggregate((a, b) => a + " " + b);
+            //Console.WriteLine(temp);
+            _posLevelSampler = new Categorical(levelPros);
+        }
+
+
+        protected virtual string SampleNegItemDynamic(Feedback posFeedback)
 		{
 			// sample r
 			int r;
