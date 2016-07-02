@@ -21,7 +21,7 @@ namespace WrapRec.Extensions.IO
 		protected override void EnrichFeedback(Feedback feedback)
 		{
 			if (feedback.Level == 0)
-				feedback.Level = Level;
+				feedback.Level = feedback.Attributes.ContainsKey("level") ? int.Parse(feedback.Attributes["level"].Value) : Level;
 			if (Level < 0)
 				feedback.FeedbackType = FeedbackType.Negative;
 		}
