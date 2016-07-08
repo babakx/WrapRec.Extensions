@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MyMediaLite;
 using WrapRec.Data;
 using MyMediaLite.Data;
 using WrapRec.Models;
@@ -15,7 +16,8 @@ namespace WrapRec.Extensions.Models
 	public class BPRFM : BPRMF
 	{
 		public Split Split { get; set; }
-		public Mapping UsersMap { get; set; }
+        public Model Model { get; set; }
+        public Mapping UsersMap { get; set; }
 		public Mapping ItemsMap { get; set; }
 		public FmFeatureBuilder FeatureBuilder { get; set; }
 		public int NumTrainFeaturs { get; protected set; }
@@ -111,7 +113,13 @@ namespace WrapRec.Extensions.Models
 			}
 		}
 
-		public override float Predict(int user_id, int item_id)
+        public override void Iterate()
+        {
+            int time = (int) Wrap.MeasureTime(delegate() { base.Iterate(); }).TotalMilliseconds;
+            Model.OnIterate(this, time);
+        }
+
+        public override float Predict(int user_id, int item_id)
 		{
 			bool newUser = (user_id > MaxUserID);
 			bool newItem = (item_id > MaxItemID);

@@ -43,6 +43,7 @@ namespace WrapRec.Extensions.Models
 
 			mmlInstance.Feedback = mmlFeedback;
 			mmlInstance.Split = split;
+            mmlInstance.Model = this;
 			mmlInstance.UsersMap = UsersMap;
 			mmlInstance.ItemsMap = ItemsMap;
 			mmlInstance.FeatureBuilder = featBuilder;
@@ -51,7 +52,7 @@ namespace WrapRec.Extensions.Models
 			PureTrainTime = (int)Wrap.MeasureTime(delegate() { mmlInstance.Train(); }).TotalMilliseconds;
 		}
 
-		public override float Predict(Feedback feedback)
+	    public override float Predict(Feedback feedback)
 		{
 			return ((BPRFM)MmlRecommenderInstance).Predict(feedback);
 		}

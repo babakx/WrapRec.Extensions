@@ -9,6 +9,7 @@ using LinqLib.Sequence;
 using LinqLib.Operators;
 using MyMediaLite.DataType;
 using WrapRec.Utils;
+using MyMediaLite;
 
 namespace WrapRec.Extensions.Models
 {
@@ -364,23 +365,29 @@ namespace WrapRec.Extensions.Models
 		// this method ingores the properties of the baseClass: WithReplacement and UniformUserSampling
 		public override void Iterate()
 		{
-			for (int i = 0; i < Feedback.Count; i++)
-			{
-				if (UnobservedNegSampler == UnobservedNegSampler.Dynamic && i % (AllItems.Count * Math.Log(AllItems.Count)) == 0)
-					UpdateDynamicSampler();
-				
-				var pos = SamplePosFeedback();
-				var neg = SampleNegFeedback(pos);
+		    int time = (int) Wrap.MeasureTime(delegate()
+		    {
+		        for (int i = 0; i < Feedback.Count; i++)
+		        {
+		            if (UnobservedNegSampler == UnobservedNegSampler.Dynamic &&
+		                i%(AllItems.Count*Math.Log(AllItems.Count)) == 0)
+		                UpdateDynamicSampler();
 
-				int user_id = UsersMap.ToInternalID(pos.User.Id);
-				int item_id = ItemsMap.ToInternalID(pos.Item.Id);
-				int other_item_id = ItemsMap.ToInternalID(neg.Item.Id);
+		            var pos = SamplePosFeedback();
+		            var neg = SampleNegFeedback(pos);
 
-				UpdateFactors(user_id, item_id, other_item_id, true, true, update_j);
-			}
+		            int user_id = UsersMap.ToInternalID(pos.User.Id);
+		            int item_id = ItemsMap.ToInternalID(pos.Item.Id);
+		            int other_item_id = ItemsMap.ToInternalID(neg.Item.Id);
 
-            if (PosSampler == PosSampler.AdaptedWeight)
-                UpdatePosSampler();
+		            UpdateFactors(user_id, item_id, other_item_id, true, true, update_j);
+		        }
+
+		        if (PosSampler == PosSampler.AdaptedWeight)
+		            UpdatePosSampler();
+		    }).TotalMilliseconds;
+		    
+            Model.OnIterate(this, time);
 		}
 
 		protected virtual void UpdateDynamicSampler()
