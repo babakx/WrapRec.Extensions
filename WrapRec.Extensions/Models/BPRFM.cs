@@ -41,18 +41,21 @@ namespace WrapRec.Extensions.Models
 			// used by WrapRec-based logic
 			string userIdOrg = UsersMap.ToOriginalID(user_id);
 			string itemIdOrg = ItemsMap.ToOriginalID(item_id);
-			var features = Split.Container.FeedbacksDic[userIdOrg, itemIdOrg].GetAllAttributes().Select(a => a.Translation).ToList();
+
+		    List<Tuple<int, float>> features = new List<Tuple<int, float>>();
+            if (Split.SetupParameters.ContainsKey("feedbackAttributes"))
+                features = Split.Container.FeedbacksDic[userIdOrg, itemIdOrg].GetAllAttributes().Select(a => a.Translation).ToList();
 
 			double item_bias_diff = item_bias[item_id] - item_bias[other_item_id];
 
 			double y_uij = item_bias_diff + MatrixExtensions.RowScalarProductWithRowDifference(
 				user_factors, user_id, item_factors, item_id, item_factors, other_item_id);
 
-			foreach (var feat in features)
-			{
-				y_uij += feat.Item2 * MatrixExtensions.RowScalarProductWithRowDifference(
-					feature_factors, feat.Item1, item_factors, item_id, item_factors, other_item_id);
-			}
+            foreach (var feat in features)
+            {
+                y_uij += feat.Item2 * MatrixExtensions.RowScalarProductWithRowDifference(
+                    feature_factors, feat.Item1, item_factors, item_id, item_factors, other_item_id);
+            }
 
 			double exp = Math.Exp(y_uij);
 			double sigmoid = 1 / (1 + exp);

@@ -27,7 +27,8 @@ namespace WrapRec.Extensions.Models
 	{ 
 		UniformFeedback,
 		UniformItem,
-		Dynamic
+		Dynamic,
+        DynamicLevel
 	}
 
     public class MultiLevelBPRFM : BPRFM
@@ -58,6 +59,8 @@ namespace WrapRec.Extensions.Models
 		float[] _itemFactorsStdev;
 		
 		protected Categorical _posLevelSampler;
+        protected Categorical _posLevelUniFeedbackSampler;
+
 		protected Categorical _unobservedOrNegativeSampler;
 
 		static List<int> _allThreadIds = new List<int>();
@@ -97,17 +100,21 @@ namespace WrapRec.Extensions.Models
 			_itemFactorsStdev = new float[NumFactors];
 
             double[] levelPro = new double[PosLevels.Count];
+            double[] levelProUniFeedback = new double[PosLevels.Count];
 
             // initialize dynamic level sampler
-            if (PosSampler == PosSampler.DynamicLevel || PosSampler == PosSampler.AdaptedWeight)
+            //if (PosSampler == PosSampler.DynamicLevel || PosSampler == PosSampler.AdaptedWeight)
 			{
 				// key is levelNo, value id list of feedback in that level
 				sum = LevelPosFeedback.Sum(kv => kv.Key * kv.Value.Count);
-				
-				for (int i = 0; i < PosLevels.Count; i++)
-					levelPro[i] = 1.0f * PosLevels[i] * LevelPosFeedback[PosLevels[i]].Count / sum;
-				
-				_posLevelSampler = new Categorical(levelPro);
+
+			    for (int i = 0; i < PosLevels.Count; i++)
+			    {
+			        levelPro[i] = 1.0f*PosLevels[i]*LevelPosFeedback[PosLevels[i]].Count/sum;
+                    levelProUniFeedback[i] = 1 / sum;
+                }
+                _posLevelSampler = new Categorical(levelPro);
+			    _posLevelUniFeedbackSampler = new Categorical(levelProUniFeedback);
 			}
 
             // this sampler specifies whether the negative sample should be sampled from observed or unobserved feedback
@@ -229,7 +236,9 @@ namespace WrapRec.Extensions.Models
 					int i = random.Next(LevelPosFeedback[l].Count);
 					return LevelPosFeedback[l][i];
 				case PosSampler.UniformFeedback:
-					return AllPosFeedback[random.Next(AllPosFeedback.Count)];
+                    int level2 = PosLevels[random.Next(PosLevels.Count)];
+                    int index2 = random.Next(LevelPosFeedback[level2].Count);
+                    return LevelPosFeedback[level2][index2];
                 case PosSampler.LeastPopular:
 			        return SampleLeastPopularPosFeedback();
 				default:
@@ -267,21 +276,41 @@ namespace WrapRec.Extensions.Models
 						neg = TrainFeedback[random.Next(TrainFeedback.Count)];
 					} while (neg.User == posFeedback.User);
 					break;
+                case UnobservedNegSampler.DynamicLevel:
+                    do
+                    {
+                        int l = PosLevels[_posLevelSampler.Sample()];
+                        int i = random.Next(LevelPosFeedback[l].Count);
+                        neg = LevelPosFeedback[l][i];
+                    } while (neg.User == posFeedback.User);
+                    break;
 				case UnobservedNegSampler.UniformItem:
-					string itemId;
-					do
-					{
-						itemId = AllItems[random.Next(AllItems.Count)];
-					} while (UserFeedback[posFeedback.User.Id].Select(f => f.Item.Id).Contains(itemId));
-					neg = new Feedback(posFeedback.User, Split.Container.Items[itemId]);
+                    {
+                        string itemId;
+                        int user_id, item_id;
+                        do
+                        {
+                            itemId = AllItems[random.Next(AllItems.Count)];
+                            item_id = ItemsMap.ToInternalID(itemId);
+                            user_id = UsersMap.ToInternalID(posFeedback.User.Id);
+                            //} while (UserFeedback[posFeedback.User.Id].Select(f => f.Item.Id).Contains(itemId));
+                        } while (Feedback.UserMatrix[user_id, item_id] == true);
+                        neg = new Feedback(posFeedback.User, Split.Container.Items[itemId]);
+                    }
 					break;
 				case UnobservedNegSampler.Dynamic:
-					string negItemId;
-					do
-					{
-						negItemId = SampleNegItemDynamic(posFeedback);
-					} while (UserFeedback[posFeedback.User.Id].Select(f => f.Item.Id).Contains(negItemId));
-					neg = new Feedback(posFeedback.User, Split.Container.Items[negItemId]);
+                    {
+                        string negItemId;
+                        int user_id, item_id;
+                        do
+                        {
+                            negItemId = SampleNegItemDynamic(posFeedback);
+                            item_id = ItemsMap.ToInternalID(negItemId);
+                            user_id = UsersMap.ToInternalID(posFeedback.User.Id);
+                        //} while (UserFeedback[posFeedback.User.Id].Select(f => f.Item.Id).Contains(negItemId));
+                        } while (Feedback.UserMatrix[user_id, item_id] == true) ;
+                        neg = new Feedback(posFeedback.User, Split.Container.Items[negItemId]);
+                    }
 					break;
 				default:
 					break;
@@ -394,7 +423,7 @@ namespace WrapRec.Extensions.Models
 		{
  			for (int f = 0; f < NumFactors; f++)
 			{
-				_factorBasedRank[f] = AllItems.OrderByDescending(iId => Math.Abs(item_factors[ItemsMap.ToInternalID(iId), f])).ToList();
+				_factorBasedRank[f] = AllItems.OrderByDescending(iId => item_factors[ItemsMap.ToInternalID(iId), f]).ToList();
 				_itemFactorsStdev[f] = AllItems.Select(iId => item_factors[ItemsMap.ToInternalID(iId), f]).Stdev();
 			}
 		}
