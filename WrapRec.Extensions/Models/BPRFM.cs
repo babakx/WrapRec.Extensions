@@ -28,6 +28,7 @@ namespace WrapRec.Extensions.Models
 
 		protected Matrix<float> feature_factors;
 
+        // this method will be called by MML train method thus the data is already loaded and features are translated
 		protected override void InitModel()
 		{
 			base.InitModel();
