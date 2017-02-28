@@ -23,7 +23,6 @@ namespace WrapRec.Extensions.Models
         protected override void UpdateFactors(int user_id, int item_id, int other_item_id, bool update_u, bool update_i, bool update_j)
         {
             double x_uij = MyMediaLite.DataType.MatrixExtensions.RowScalarProductWithRowDifference(user_factors, user_id, item_factors, item_id, item_factors, other_item_id);
-
             double one_over_one_plus_ex = 1 / (1 + Math.Exp(x_uij));
 
             // adjust factors
@@ -36,7 +35,7 @@ namespace WrapRec.Extensions.Models
                 if (update_u)
                 {
                     double update = (h_if - h_jf) * one_over_one_plus_ex - reg_u * w_uf;
-                    user_factors[user_id, f] = (float)(w_uf + learn_rate * update);
+                    user_factors[user_id, f] = (float) (w_uf + learn_rate*update);
                 }
 
                 if (update_i)

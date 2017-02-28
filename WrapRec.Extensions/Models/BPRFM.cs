@@ -125,13 +125,37 @@ namespace WrapRec.Extensions.Models
 
         public override float Predict(int user_id, int item_id)
 		{
-			bool newUser = (user_id > MaxUserID);
-			bool newItem = (item_id > MaxItemID);
+            string userIdOrg = UsersMap.ToOriginalID(user_id);
+            string itemIdOrg = ItemsMap.ToOriginalID(item_id);
+            List<Tuple<int, float>> features = new List<Tuple<int, float>>();
+
+            if (Split.Container.FeedbacksDic.ContainsKey(userIdOrg, itemIdOrg))
+            {
+                var feedback = Split.Container.FeedbacksDic[userIdOrg, itemIdOrg];
+                features = feedback.GetAllAttributes().Select(a => FeatureBuilder.TranslateAttribute(a)).ToList();
+            }
+
+            bool newUser = (user_id > MaxUserID);
+            bool newItem = (item_id > MaxItemID);
+
+            float userAttrsTerm = 0, itemAttrsTerm = 0;
+
+            foreach (var feat in features)
+            {
+                // if feat_index is greater than MaxFeatureId it means that the feature is new in test set so its factors has not been learnt
+                if (feat.Item1 < NumTrainFeaturs)
+                {
+                    float x_z = feat.Item2;
+
+                    userAttrsTerm += newUser ? 0 : x_z * MatrixExtensions.RowScalarProduct(feature_factors, feat.Item1, user_factors, user_id);
+                    itemAttrsTerm += newItem ? 0 : x_z * MatrixExtensions.RowScalarProduct(feature_factors, feat.Item1, item_factors, item_id);
+                }
+            }
 
 			float itemBias = newItem ? 0 : item_bias[item_id];
 			float userItemTerm = (newUser || newItem) ? 0 : MatrixExtensions.RowScalarProduct(user_factors, user_id, item_factors, item_id);
 
-			return itemBias + userItemTerm;
+			return itemBias + userItemTerm + userAttrsTerm + itemAttrsTerm;
 		}
 
 		public float Predict(Feedback feedback)
@@ -157,7 +181,10 @@ namespace WrapRec.Extensions.Models
 				}
 			}
 
-			return Predict(userId, itemId) + userAttrsTerm + itemAttrsTerm;
+            float itemBias = newItem ? 0 : item_bias[itemId];
+            float userItemTerm = (newUser || newItem) ? 0 : MatrixExtensions.RowScalarProduct(user_factors, userId, item_factors, itemId);
+
+            return itemBias + userItemTerm + userAttrsTerm + itemAttrsTerm;
 		}
 	}
 }
