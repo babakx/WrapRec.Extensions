@@ -158,7 +158,7 @@ namespace WrapRec.Extensions.Models
 			return itemBias + userItemTerm + userAttrsTerm + itemAttrsTerm;
 		}
 
-		public float Predict(Feedback feedback)
+		public virtual float Predict(Feedback feedback)
 		{
 			int userId = UsersMap.ToInternalID(feedback.User.Id);
 			int itemId = ItemsMap.ToInternalID(feedback.Item.Id);
