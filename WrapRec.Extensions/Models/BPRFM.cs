@@ -10,6 +10,7 @@ using WrapRec.Data;
 using MyMediaLite.Data;
 using WrapRec.Models;
 using WrapRec.Core;
+using WrapRec.Utils;
 
 namespace WrapRec.Extensions.Models
 {
@@ -21,6 +22,8 @@ namespace WrapRec.Extensions.Models
 		public Mapping ItemsMap { get; set; }
 		public FmFeatureBuilder FeatureBuilder { get; set; }
 		public int NumTrainFeaturs { get; protected set; }
+        public bool Normalize { get; set; }
+        public bool IgnoreFeaturesOnPrediction { get; set; }
 
 		// regularization that is considered for auxiliary features
 		public float RegC { get { return reg_c; } set { reg_c = value; } }
@@ -45,7 +48,7 @@ namespace WrapRec.Extensions.Models
 
 		    List<Tuple<int, float>> features = new List<Tuple<int, float>>();
             if (Split.SetupParameters.ContainsKey("feedbackAttributes"))
-                features = Split.Container.FeedbacksDic[userIdOrg, itemIdOrg].GetAllAttributes().Select(a => a.Translation).ToList();
+                features = Split.Container.FeedbacksDic[userIdOrg, itemIdOrg].GetAllAttributes().Select(a => a.Translation).NormalizeSumToOne(Normalize).ToList();
 
 			double item_bias_diff = item_bias[item_id] - item_bias[other_item_id];
 
@@ -129,10 +132,10 @@ namespace WrapRec.Extensions.Models
             string itemIdOrg = ItemsMap.ToOriginalID(item_id);
             List<Tuple<int, float>> features = new List<Tuple<int, float>>();
 
-            if (Split.Container.FeedbacksDic.ContainsKey(userIdOrg, itemIdOrg))
+            if (!IgnoreFeaturesOnPrediction && Split.Container.FeedbacksDic.ContainsKey(userIdOrg, itemIdOrg))
             {
                 var feedback = Split.Container.FeedbacksDic[userIdOrg, itemIdOrg];
-                features = feedback.GetAllAttributes().Select(a => FeatureBuilder.TranslateAttribute(a)).ToList();
+                features = feedback.GetAllAttributes().Select(a => FeatureBuilder.TranslateAttribute(a)).NormalizeSumToOne(Normalize).ToList();
             }
 
             bool newUser = (user_id > MaxUserID);
@@ -162,14 +165,17 @@ namespace WrapRec.Extensions.Models
 		{
 			int userId = UsersMap.ToInternalID(feedback.User.Id);
 			int itemId = ItemsMap.ToInternalID(feedback.Item.Id);
-			var featurs = feedback.GetAllAttributes().Select(a => FeatureBuilder.TranslateAttribute(a));
+            List<Tuple<int, float>> features = new List<Tuple<int, float>>();
+
+            if (!IgnoreFeaturesOnPrediction)
+                features = feedback.GetAllAttributes().Select(a => FeatureBuilder.TranslateAttribute(a)).NormalizeSumToOne().ToList();
 
 			bool newUser = (userId > MaxUserID);
 			bool newItem = (itemId > MaxItemID);
 
 			float userAttrsTerm = 0, itemAttrsTerm = 0;
 
-			foreach (var feat in featurs)
+			foreach (var feat in features)
 			{
 				// if feat_index is greater than MaxFeatureId it means that the feature is new in test set so its factors has not been learnt
 				if (feat.Item1 < NumTrainFeaturs)

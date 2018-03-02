@@ -29,7 +29,14 @@ namespace WrapRec.Extensions.Models
 
 		    if (wBprFm != null)
 		        wBprFm.NumGroups = int.Parse(SetupParameters["numGroups"]);
-		}
+
+            if (SetupParameters.ContainsKey("Normalize"))
+                ((BPRFM)MmlRecommenderInstance).Normalize = bool.Parse(SetupParameters["Normalize"]);
+
+            if (SetupParameters.ContainsKey("ingoreFeatures"))
+                ((BPRFM)MmlRecommenderInstance).IgnoreFeaturesOnPrediction = bool.Parse(SetupParameters["ingoreFeatures"]);
+
+        }
 
         public override void Train(Split split)
 		{

@@ -81,10 +81,13 @@
     <Compile Include="IO\MultiLevelFeedbackCsvReader.cs" />
     <Compile Include="IO\RatingAsMultiLevelFeedbackCsvReader.cs" />
     <Compile Include="Models\BPRFM.cs" />
+    <Compile Include="Models\FM.cs" />
     <Compile Include="Models\MmlBprfmRecommender.cs" />
+    <Compile Include="Models\MmlFmRecommender.cs" />
     <Compile Include="Models\MultiLevelBPRFM.cs" />
     <Compile Include="Models\TimeBasedMultiLevelBPRFM.cs" />
     <Compile Include="Models\WeightedBPRFM.cs" />
+    <Compile Include="Models\WFM.cs" />
     <Compile Include="Models\WrapRecBPRMF.cs" />
     <Compile Include="Models\WrapRecWRMF.cs" />
     <Compile Include="Program.cs" />

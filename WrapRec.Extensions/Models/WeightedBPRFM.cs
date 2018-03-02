@@ -1,21 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MyMediaLite.DataType;
 using MyMediaLite.ItemRecommendation;
 using WrapRec.Core;
+using WrapRec.Utils;
 
 namespace WrapRec.Extensions.Models
 {
     public class WeightedBPRFM : BPRFM
     {
         protected float[] weights;
-
         public float reg_w { get; set; } 
 
         public Dictionary<int, int> FeatureGroups;
+        //private StreamWriter _alphaWriter;
+        private int _iter = 0;
 
         public int NumGroups { get; set; }
 
@@ -29,6 +32,8 @@ namespace WrapRec.Extensions.Models
         {
             base.InitModel();
             weights = new float[NumGroups];
+            //_alphaWriter = new StreamWriter("alpha_" + Split.Container.Id + ".csv");
+
             var r = new System.Random();
             // initialized weights
             for (int i = 0; i < NumGroups; i++)
@@ -46,7 +51,7 @@ namespace WrapRec.Extensions.Models
 
             List<Tuple<int, float>> features = new List<Tuple<int, float>>();
             if (Split.SetupParameters.ContainsKey("feedbackAttributes"))
-                features = Split.Container.FeedbacksDic[userIdOrg, itemIdOrg].GetAllAttributes().Select(a => a.Translation).ToList();
+                features = Split.Container.FeedbacksDic[userIdOrg, itemIdOrg].GetAllAttributes().Select(a => a.Translation).NormalizeSumToOne(Normalize).ToList();
 
             double item_bias_diff = item_bias[item_id] - item_bias[other_item_id];
 
@@ -158,6 +163,12 @@ namespace WrapRec.Extensions.Models
 
         private void NormalizeWeights()
         {
+            for (int i = 0; i < weights.Length; i++)
+            {
+                if (weights[i] < 0)
+                    weights[i] = 0;
+            }
+
             float sum = weights.Sum() / NumGroups;
             for (int i = 0; i < weights.Length; i++)
             {
@@ -169,6 +180,8 @@ namespace WrapRec.Extensions.Models
         {
             Console.WriteLine($"alpha_u: {weights[0]}, alpha_i: {weights[1]}" + (weights.Length > 2 ? $", alpha_z: {weights[2]}" : ""));
             base.Iterate();
+            //_alphaWriter.WriteLine(++_iter + "," + weights[0] + "," + weights[1] + (weights.Length > 2 ? "," + weights[2] : ""));
+            //_alphaWriter.Flush();
         }
 
         public override float Predict(int user_id, int item_id)
@@ -180,7 +193,7 @@ namespace WrapRec.Extensions.Models
             if (Split.Container.FeedbacksDic.ContainsKey(userIdOrg, itemIdOrg))
             {
                 var feedback = Split.Container.FeedbacksDic[userIdOrg, itemIdOrg];
-                features = feedback.GetAllAttributes().Select(a => FeatureBuilder.TranslateAttribute(a)).ToList();
+                features = feedback.GetAllAttributes().Select(a => FeatureBuilder.TranslateAttribute(a)).NormalizeSumToOne(Normalize).ToList();
             }
 
             bool newUser = (user_id > MaxUserID);
@@ -248,5 +261,6 @@ namespace WrapRec.Extensions.Models
 
             return itemBias + userItemTerm + alpha_u * userAttrsTerm + alpha_i * itemAttrsTerm;
         }
+
     }
 }
